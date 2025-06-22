@@ -1,5 +1,5 @@
 // `src/components/Editor.tsx`
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -16,6 +16,21 @@ import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { ImageNode } from './ImageNode';
 import { ICMSCrudService } from "../helpers/ICMSCrudService";
 import SelectImageModal from './SelectImageModal';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $generateHtmlFromNodes } from '@lexical/html';
+
+// function ChangePlugin({ onChange }: { onChange: (html: string) => void; }) {
+//     const [editor] = useLexicalComposerContext();
+//     useEffect(() => {
+//         return editor.registerUpdateListener(({ editorState }) => {
+//             editorState.read(() => {
+//                 const htmlString = $generateHtmlFromNodes(editor, null);
+//                 onChange(htmlString);
+//             });
+//         });
+//     }, [editor, onChange]);
+//     return null;
+// }
 
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
     const [isImageModalOpen, setImageModalOpen] = useState(false);
@@ -33,9 +48,12 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     };
 
     const handleChange = (editorState: EditorState) => {
+
         editorState.read(() => {
             // Handle editor state changes here
             console.log('Editor content changed');
+            const htmlString = $generateHtmlFromNodes(editorRef, null);
+            console.log(htmlString);
         });
     };
 

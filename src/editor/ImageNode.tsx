@@ -65,6 +65,16 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   decorate(): JSX.Element {
     return <ImageComponent src={this.__src} alt={this.__alt} />;
   }
+
+  exportDOM(): {element: HTMLElement} {
+    const img = document.createElement('img');
+    img.setAttribute('src', this.__src);
+    if (this.__alt) {
+      img.setAttribute('alt', this.__alt);
+    }
+    img.style.maxWidth = '100%';
+    return { element: img };
+  }
 }
 
 export function $createImageNode(payload: ImagePayload): ImageNode {
@@ -74,4 +84,3 @@ export function $createImageNode(payload: ImagePayload): ImageNode {
 export function $isImageNode(node: unknown): node is ImageNode {
   return node instanceof ImageNode;
 }
-
