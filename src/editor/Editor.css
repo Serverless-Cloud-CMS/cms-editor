@@ -1,0 +1,157 @@
+.editor-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.editor-input {
+    min-height: 800px;
+    width: 800px;
+    outline: none;
+    padding: 8px;
+    text-align: left; /* Ensure text is left-aligned by default */
+}
+
+.editor-placeholder {
+    color: #aaa;
+    position: absolute;
+    pointer-events: none;
+    text-align: left;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+}
+
+.toolbar-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.toolbar-item.spaced {
+    margin-right: 8px;
+}
+
+.toolbar-item.active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.toolbar-item:hover {
+    background-color: #e6e6e6;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #ddd;
+    margin: 0 4px;
+}
+
+select.toolbar-item {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.toolbar button.toolbar-item i.format {
+    background-size: contain;
+    height: 24px;
+    width: 24px;
+    vertical-align: -0.25em;
+    display: flex;
+    background-repeat: no-repeat;
+
+}
+
+.toolbar button .i {
+    background: none;
+    border: none;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+i.icon-bold {
+    background-image: url('/src/icons/bold.svg');
+}
+
+i.icon-italic {
+    background-image: url('/src/icons/italic.svg');
+}
+
+i.icon-underline {
+    background-image: url('/src/icons/underline.svg');
+}
+
+i.icon-align-left {
+    background-image: url('/src/icons/align-left.svg');
+}
+
+i.icon-align-center {
+    background-image: url('/src/icons/align-center.svg');
+}
+
+i.icon-align-right {
+    background-image: url('/src/icons/align-right.svg');
+}
+
+i.icon-justify {
+    background-image: url('/src/icons/justify.svg');
+}
+
+i.icon-add-table {
+    background-image: url('/src/icons/add-table.svg');
+}
+
+i.icon-add-row {
+    background-image: url('/src/icons/add-row.svg');
+}
+
+i.icon-add-column {
+    background-image: url('/src/icons/add-column.svg');
+}
+
+i.icon-delete-row {
+    background-image: url('/src/icons/delete-row.svg');
+}
+
+i.icon-delete-column {
+    background-image: url('/src/icons/delete-column.svg');
+}
+
+i.icon-add-image {
+    background-image: url('/src/icons/add-image.svg');
+}
+
+i.icon-select-image {
+    background-image: url('/src/icons/select-image.svg');
+}
+
+i.icon-link-image {
+    background-image: url('/src/icons/link-image.svg');
+}

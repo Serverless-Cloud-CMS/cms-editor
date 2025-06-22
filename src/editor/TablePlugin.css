@@ -1,0 +1,23 @@
+
+.table-plugin {
+    margin-top: 8px;
+}
+
+.custom-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+    font-size: 14px;
+    text-align: left;
+    border: 3px solid #ddd; /* Add border around the table */
+}
+
+.custom-table th,
+.custom-table td {
+    border: 1px solid #ddd; /* Add border to table cells */
+    padding: 8px;
+}
+.custom-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
