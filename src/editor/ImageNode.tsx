@@ -1,6 +1,7 @@
-import { DecoratorNode, LexicalEditor, NodeKey, SerializedLexicalNode, Spread } from 'lexical';
+import { DecoratorNode, NodeKey, SerializedLexicalNode, Spread, $getNodeByKey } from 'lexical';
 import * as React from 'react';
 import {JSX} from "react";
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 
 export type ImagePayload = {
   src: string;
@@ -21,7 +22,8 @@ export type SerializedImageNode = Spread<
   SerializedLexicalNode
 >;
 
-function ImageComponent({ src, alt, width, height, onResize }: { src: string; alt?: string; width?: number; height?: number; onResize?: (w: number, h: number) => void }) {
+function ImageComponent({ src, alt, width, height, nodeKey }: { src: string; alt?: string; width?: number; height?: number; nodeKey: string }) {
+  const [editor] = useLexicalComposerContext();
   const [size, setSize] = React.useState({ width, height });
   const imgRef = React.useRef<HTMLImageElement>(null);
 
@@ -37,11 +39,19 @@ function ImageComponent({ src, alt, width, height, onResize }: { src: string; al
       const newWidth = Math.max(20, startWidth + (ev.clientX - startX));
       const newHeight = Math.max(20, startHeight + (ev.clientY - startY));
       setSize({ width: newWidth, height: newHeight });
-      onResize && onResize(newWidth, newHeight);
     }
     function onMouseUp() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      // Persist the new size to the Lexical node
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if (node && node.getType && node.getType() === 'image') {
+          const writable = node.getWritable() as ImageNode;
+          writable.__width = size.width;
+          writable.__height = size.height;
+        }
+      });
     }
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
@@ -57,22 +67,20 @@ function ImageComponent({ src, alt, width, height, onResize }: { src: string; al
         width={size.width}
         height={size.height}
       />
-      {onResize && (
-        <span
-          onMouseDown={handleMouseDown}
-          style={{
-            position: 'absolute',
-            right: 0,
-            bottom: 0,
-            width: 12,
-            height: 12,
-            background: '#ccc',
-            cursor: 'nwse-resize',
-            borderRadius: 2,
-            zIndex: 2,
-          }}
-        />
-      )}
+      <span
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'absolute',
+          right: 0,
+          bottom: 0,
+          width: 12,
+          height: 12,
+          background: '#ccc',
+          cursor: 'nwse-resize',
+          borderRadius: 2,
+          zIndex: 2,
+        }}
+      />
     </span>
   );
 }
@@ -125,17 +133,13 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   }
 
   decorate(): JSX.Element {
-    // Provide onResize handler to update node size
     return (
       <ImageComponent
         src={this.__src}
         alt={this.__alt}
         width={this.__width}
         height={this.__height}
-        onResize={(w, h) => {
-          this.__width = w;
-          this.__height = h;
-        }}
+        nodeKey={this.getKey()}
       />
     );
   }
