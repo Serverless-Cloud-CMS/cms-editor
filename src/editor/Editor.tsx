@@ -19,18 +19,6 @@ import SelectImageModal from './SelectImageModal';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes } from '@lexical/html';
 
-// function ChangePlugin({ onChange }: { onChange: (html: string) => void; }) {
-//     const [editor] = useLexicalComposerContext();
-//     useEffect(() => {
-//         return editor.registerUpdateListener(({ editorState }) => {
-//             editorState.read(() => {
-//                 const htmlString = $generateHtmlFromNodes(editor, null);
-//                 onChange(htmlString);
-//             });
-//         });
-//     }, [editor, onChange]);
-//     return null;
-// }
 
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
     const [isImageModalOpen, setImageModalOpen] = useState(false);
