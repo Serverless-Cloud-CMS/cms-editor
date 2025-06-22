@@ -6,7 +6,7 @@ import {ICMSCrudService} from "../helpers/ICMSCrudService";
 interface SelectImageModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (url: string, key: string) => void;
+  onSelect: (url: string, key: string, width?: number, height?: number) => void;
   dataService: ICMSCrudService;
 }
 
@@ -14,8 +14,24 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
   const [imageKeys, setImageKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [width, setWidth] = useState<number>(300);
+  const [height, setHeight] = useState<number>(200);
 
- // console.log("SelectImageModal initialized with dataService:", dataService);
+  // Set width/height to actual image size when an image is selected
+  useEffect(() => {
+    if (selectedKey) {
+      const url = `${config.MediaProxy}/${selectedKey}`;
+      const img = new window.Image();
+      img.onload = () => {
+        setWidth(img.naturalWidth);
+        setHeight(img.naturalHeight);
+      };
+      img.src = url;
+    }
+  }, [selectedKey]);
+
+  // console.log("SelectImageModal initialized with dataService:", dataService);
   const test = dataService.listMedia(config.StageBucket, config.MediaPrefix);
 
   useEffect(() => {
@@ -47,12 +63,34 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
           {imageKeys.map(key => {
             const url = `${config.MediaProxy}/${key}`;
             return (
-              <div key={key} className="image-thumb" onClick={() => onSelect(url, key)} title={key}>
+              <div key={key} className={`image-thumb${selectedKey === key ? ' selected' : ''}`} onClick={() => setSelectedKey(key)} title={key}>
                 <img src={url} alt={key} className="image-thumb-img" />
               </div>
             );
           })}
           {(!loading && imageKeys.length === 0 && !error) && <div>No images found.</div>}
+        </div>
+        <div style={{ marginTop: 20 }}>
+          <label style={{ marginRight: 10 }}>
+            Width:
+            <input type="number" min={20} max={2000} value={width} onChange={e => setWidth(Number(e.target.value))} style={{ width: 60, marginLeft: 5 }} />
+          </label>
+          <label style={{ marginRight: 10 }}>
+            Height:
+            <input type="number" min={20} max={2000} value={height} onChange={e => setHeight(Number(e.target.value))} style={{ width: 60, marginLeft: 5 }} />
+          </label>
+          <button
+            disabled={!selectedKey}
+            onClick={() => {
+              if (selectedKey) {
+                const url = `${config.MediaProxy}/${selectedKey}`;
+                onSelect(url, selectedKey, width, height);
+              }
+            }}
+            style={{ marginLeft: 10 }}
+          >
+            Insert Image
+          </button>
         </div>
       </div>
       <style>{`
@@ -110,6 +148,10 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
           cursor: pointer;
           border: 2px solid transparent;
           transition: border 0.2s, box-shadow 0.2s;
+        }
+        .image-thumb.selected {
+          border: 2px solid #0078d4;
+          box-shadow: 0 4px 16px rgba(0,120,212,0.12);
         }
         .image-thumb:hover {
           border: 2px solid #0078d4;

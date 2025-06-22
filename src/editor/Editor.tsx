@@ -51,13 +51,13 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     }, []);
 
     // Handler to insert image into the editor
-    const handleSelectImage = useCallback((url: string, key: string) => {
+    const handleSelectImage = useCallback((url: string, key: string, width?: number, height?: number) => {
         setImageModalOpen(false);
         if (editorRef) {
             editorRef.update(() => {
                 const selection = $getSelection();
                 if ($isRangeSelection(selection)) {
-                    selection.insertNodes([$createImageNode({ src: url, alt: key })]);
+                    selection.insertNodes([$createImageNode({ src: url, alt: key, width, height })]);
                 }
             });
         }
