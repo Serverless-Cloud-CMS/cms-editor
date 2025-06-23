@@ -49,7 +49,10 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             };
             const command = new GetObjectCommand(params);
             const response = await this.s3Client.send(command);
-            const data = await this.streamToString(response.Body);
+            console.log(`Here post ${key}`);
+            const data = await response.Body.transformToString();
+            //const data = await this.streamToString(response.Body);
+            console.log(`Loaded post ${data}`);
             return JSON.parse(data);
         } catch (error) {
             const err = error as Error;

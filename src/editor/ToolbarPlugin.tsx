@@ -199,6 +199,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         const json = editorState.toJSON();
         const guid = uuidv4();
         const key = `${config.StagePrefix || ''}${guid}.json`;
+        console.log(`Saving post to ${key}`);
+        console.log(JSON.stringify(json));
         await dataService.create(config.StageBucket, key, json);
         window.alert(`Post saved as ${key}`);
     };
@@ -209,7 +211,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
     const handleSelectPost = async (key: string) => {
         setLoadModalOpen(false);
         try {
+            console.log(`Selecting post ${key}`);
             const json = await dataService.read(config.StageBucket, key);
+            console.log(`Selected post ${key}`);
             editor.setEditorState(editor.parseEditorState(JSON.stringify(json)));
             window.alert('Post loaded!');
         } catch (e) {
