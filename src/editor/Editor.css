@@ -155,3 +155,29 @@ i.icon-select-image {
 i.icon-link-image {
     background-image: url('/src/icons/link-image.svg');
 }
+
+i.icon-save {
+    background-image: url('/src/icons/save.svg');
+}
+
+i.icon-load{
+    background-image: url('/src/icons/load.svg');
+}
+
+i.icon-bulleted-list {
+    background-image: url('/src/icons/bulleted-list.svg');
+}
+
+i.icon-numbered-list {
+    background-image: url('/src/icons/numbered-list.svg');
+}
+
+.toolbar-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+}

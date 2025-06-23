@@ -17,6 +17,10 @@ import './Editor.css';
 import { $createImageNode } from './ImageNode';
 import { config } from '../config';
 import {ICMSCrudService} from "../helpers/ICMSCrudService";
+import { v4 as uuidv4 } from 'uuid';
+import SaveIcon from '../icons/save.svg';
+import LoadIcon from '../icons/load.svg';
+import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 
 interface ToolbarPluginProps  {
     onOpenImageModal?: () => void;
@@ -29,26 +33,15 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
     const [editor] = useLexicalComposerContext();
     const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
     const [activeAlignment, setActiveAlignment] = useState<string | null>(null);
+    const [loadModalOpen, setLoadModalOpen] = useState(false);
+    const [postKeys, setPostKeys] = useState<string[]>([]);
+    const [loadingPosts, setLoadingPosts] = useState(false);
+    const [loadError, setLoadError] = useState<string|null>(null);
 
     useEffect(() => {
         if (setEditorRef) setEditorRef(editor);
     }, [editor, setEditorRef]);
 
-    // useEffect(() => {
-    //     return editor.registerUpdateListener(() => {
-    //         editor.getEditorState().read(() => {
-    //             const selection = $getSelection();
-    //             if ($isRangeSelection(selection)) {
-    //                 const rangeSelection = selection as RangeSelection;
-    //                 setActiveFormats(rangeSelection.getFormat());
-    //                 setActiveAlignment(rangeSelection.getStyle() || null);
-    //             } else {
-    //                 setActiveFormats(new Set());
-    //                 setActiveAlignment(null);
-    //             }
-    //         });
-    //     });
-    // }, [editor]);
 
     const formatText = (format: TextFormatType) => {
         editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
@@ -200,6 +193,178 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         if (onOpenImageModal) onOpenImageModal();
     };
 
+    // Save editor content as JSON to S3
+    const handleSavePost = async () => {
+        const editorState = editor.getEditorState();
+        const json = editorState.toJSON();
+        const guid = uuidv4();
+        const key = `${config.StagePrefix || ''}${guid}.json`;
+        await dataService.create(config.StageBucket, key, json);
+        window.alert(`Post saved as ${key}`);
+    };
+
+    // Load editor content from S3 and set in editor
+    const handleOpenLoadModal = () => setLoadModalOpen(true);
+
+    const handleSelectPost = async (key: string) => {
+        setLoadModalOpen(false);
+        try {
+            const json = await dataService.read(config.StageBucket, key);
+            editor.setEditorState(editor.parseEditorState(JSON.stringify(json)));
+            window.alert('Post loaded!');
+        } catch (e) {
+            window.alert('Failed to load post.');
+        }
+    };
+
+    // Modal for selecting a post to load
+    const LoadPostModal: React.FC<{
+      isOpen: boolean;
+      onClose: () => void;
+      onSelect: (key: string) => void;
+      dataService: ICMSCrudService;
+    }> = ({ isOpen, onClose, onSelect, dataService }) => {
+      const [postKeys, setPostKeys] = useState<string[]>([]);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState<string | null>(null);
+      const [selectedKey, setSelectedKey] = useState<string | null>(null);
+      const [meta, setMeta] = useState<Record<string, any>>({});
+
+      useEffect(() => {
+        if (!isOpen) return;
+        setLoading(true);
+        setError(null);
+        dataService.listMedia(config.StageBucket, config.StagePrefix || '')
+          .then(keys => {
+            const jsonKeys = keys.filter(k => k.endsWith('.json'));
+            setPostKeys(jsonKeys);
+            // Optionally fetch meta for each post (e.g. first 1KB of each file)
+            Promise.all(jsonKeys.map(async key => {
+              try {
+                const json = await dataService.read(config.StageBucket, key);
+                const meta = (json && typeof json === 'object' && 'meta' in json && (json as any).meta) ? (json as any).meta : {};
+                return { key, meta };
+              } catch {
+                return { key, meta: {} };
+              }
+            })).then(results => {
+              const metaObj: Record<string, any> = {};
+              results.forEach(({ key, meta }) => { metaObj[key] = meta; });
+              setMeta(metaObj);
+            });
+            setLoading(false);
+          })
+          .catch(e => {
+            setError(e.message);
+            setLoading(false);
+          });
+      }, [isOpen]);
+
+      if (!isOpen) return null;
+
+      return (
+        <div className="select-image-modal-backdrop">
+          <div className="select-image-modal">
+            <button className="close-btn" onClick={onClose}>×</button>
+            <h2>Select a Post</h2>
+            {loading && <div>Loading posts...</div>}
+            {error && <div style={{ color: 'red' }}>{error}</div>}
+            <div className="image-gallery">
+              {postKeys.map(key => (
+                <div key={key} className={`image-thumb${selectedKey === key ? ' selected' : ''}`} onClick={() => setSelectedKey(key)} title={key}>
+                  <div style={{fontSize:12,wordBreak:'break-all',marginBottom:4}}>{meta[key]?.title || key}</div>
+                  {meta[key]?.date && <div style={{fontSize:11, color:'#888'}}>{meta[key].date}</div>}
+                </div>
+              ))}
+              {(!loading && postKeys.length === 0 && !error) && <div>No posts found.</div>}
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <button
+                disabled={!selectedKey}
+                onClick={() => selectedKey && onSelect(selectedKey)}
+                style={{ marginLeft: 10 }}
+              >
+                Load Post
+              </button>
+            </div>
+          </div>
+          <style>{`
+            .select-image-modal-backdrop {
+              position: fixed;
+              top: 0; left: 0; right: 0; bottom: 0;
+              background: rgba(0,0,0,0.4);
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .select-image-modal {
+              background: #fff;
+              border-radius: 10px;
+              padding: 2rem 2.5rem 1.5rem 2.5rem;
+              min-width: 350px;
+              max-width: 90vw;
+              max-height: 90vh;
+              overflow-y: auto;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+              position: relative;
+            }
+            .close-btn {
+              position: absolute;
+              top: 1rem;
+              right: 1rem;
+              background: none;
+              border: none;
+              font-size: 2rem;
+              color: #888;
+              cursor: pointer;
+              transition: color 0.2s;
+            }
+            .close-btn:hover {
+              color: #222;
+            }
+            .image-gallery {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 18px;
+              margin-top: 1.5rem;
+              justify-content: flex-start;
+            }
+            .image-thumb {
+              width: 180px;
+              height: 60px;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              background: #f7f7f7;
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+              justify-content: center;
+              cursor: pointer;
+              border: 2px solid transparent;
+              transition: border 0.2s, box-shadow 0.2s;
+              padding: 8px 10px;
+            }
+            .image-thumb.selected {
+              border: 2px solid #0078d4;
+              box-shadow: 0 4px 16px rgba(0,120,212,0.12);
+            }
+            .image-thumb:hover {
+              border: 2px solid #0078d4;
+              box-shadow: 0 4px 16px rgba(0,120,212,0.12);
+            }
+            .select-image-modal h2 {
+              margin-top: 0;
+              font-size: 1.3rem;
+              font-weight: 600;
+              color: #222;
+            }
+          `}</style>
+        </div>
+      );
+    };
+
     return (
         <div className="toolbar">
             <div className="toolbar-group">
@@ -280,6 +445,33 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
                     <i className="icon-link-image format" />
                 </button>
             </div>
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
+                <button onClick={handleSavePost} className="toolbar-item spaced" title="Save Post">
+                    <i className="icon-save format toolbar-icon" />
+                </button>
+                <button onClick={handleOpenLoadModal} className="toolbar-item spaced" title="Load Post">
+                    <i className="icon-load format toolbar-icon" />
+                </button>
+            </div>
+            <div className="toolbar-divider" />
+            <div className="toolbar-group">
+                <button
+                    onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
+                    className="toolbar-item spaced"
+                    title="Bulleted List"
+                >
+                    <i className="icon-bulleted-list format" />
+                </button>
+                <button
+                    onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
+                    className="toolbar-item spaced"
+                    title="Numbered List"
+                >
+                    <i className="icon-numbered-list format" />
+                </button>
+            </div>
+            <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
         </div>
     );
 };

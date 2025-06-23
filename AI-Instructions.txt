@@ -1,1 +1,0 @@
-Make sure all UI for the Editor Actions like add Table or bold is in the same file as the ToolbarPlugin as the main ToolBar component.

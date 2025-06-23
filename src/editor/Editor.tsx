@@ -18,6 +18,8 @@ import { ICMSCrudService } from "../helpers/ICMSCrudService";
 import SelectImageModal from './SelectImageModal';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes } from '@lexical/html';
+import { ListNode, ListItemNode } from '@lexical/list';
+import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 
 
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
@@ -32,7 +34,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         theme: {
             table: 'custom-table',
         },
-        nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode],
+        nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode],
     };
 
     const handleChange = (editorState: EditorState) => {
@@ -68,6 +70,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
             <div className="editor-container">
                 <ToolbarPlugin dataService={dataService} onOpenImageModal={handleOpenImageModal} setEditorRef={setEditorRef} />
                 <TablePlugin />
+                <ListPlugin />
                 <RichTextPlugin
                     contentEditable={<ContentEditable className="editor-input" />}
                     placeholder={<div className="editor-placeholder">Enter text...</div>}
