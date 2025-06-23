@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import {AWSCMSCrudSvc} from '../helpers/AWSCMSCrudSvc';
 import { config } from '../config';
 import {ICMSCrudService} from "../helpers/ICMSCrudService";
 
