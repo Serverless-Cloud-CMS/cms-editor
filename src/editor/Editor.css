@@ -40,81 +40,132 @@
 .toolbar {
     display: flex;
     align-items: center;
-    padding: 8px;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #ddd;
+    padding: 0 16px;
+    background-color: #fafbfc;
+    border-bottom: 1px solid #e0e0e0;
     position: sticky;
     top: 0;
     z-index: 10;
+    min-height: 56px;
+    box-shadow: 0 2px 4px rgba(60,60,60,0.04);
 }
 
 .toolbar-group {
     display: flex;
     align-items: center;
-    margin-right: 16px;
+    margin-right: 20px;
+    gap: 4px;
 }
 
-.toolbar-item {
+.toolbar-item, .toolbar-dropdown > button.toolbar-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    background: none;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
+    transition: background 0.18s, box-shadow 0.18s;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0 8px;
+    color: #333;
+    font-size: 18px;
+    outline: none;
+    box-shadow: none;
 }
 
 .toolbar-item.spaced {
-    margin-right: 8px;
+    margin-right: 4px;
 }
 
-.toolbar-item.active {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
+.toolbar-item.active, .toolbar-item:active, .toolbar-item:focus {
+    background: #e3f2fd;
+    color: #1976d2;
+    box-shadow: 0 0 0 2px #90caf9;
 }
 
 .toolbar-item:hover {
-    background-color: #e6e6e6;
+    background: #f5f5f5;
+    color: #1976d2;
 }
 
 .toolbar-divider {
     width: 1px;
-    height: 24px;
-    background-color: #ddd;
-    margin: 0 4px;
+    height: 32px;
+    background-color: #e0e0e0;
+    margin: 0 8px;
+}
+
+.toolbar-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.toolbar-dropdown-menu {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    min-width: 200px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(60,60,60,0.10);
+    z-index: 100;
+    padding: 8px 0;
+    margin-top: 2px;
+    animation: dropdownIn 0.18s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.toolbar-dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    color: #222;
+    text-align: left;
+    gap: 12px;
+    border-radius: 4px;
+}
+
+.toolbar-dropdown-item:hover, .toolbar-dropdown-item:focus {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.toolbar-icon, .toolbar-dropdown-item i.format, .toolbar-item i.format {
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.toolbar-dropdown-item i.format {
+    margin-right: 12px;
 }
 
 select.toolbar-item {
-    padding: 4px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
     background-color: #fff;
     cursor: pointer;
-}
-
-.toolbar button.toolbar-item i.format {
-    background-size: contain;
-    height: 24px;
-    width: 24px;
-    vertical-align: -0.25em;
-    display: flex;
-    background-repeat: no-repeat;
-
-}
-
-.toolbar button .i {
-    background: none;
-    border: none;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 16px;
+    color: #333;
 }
 
 i.icon-bold {
@@ -191,14 +242,4 @@ i.icon-bulleted-list {
 
 i.icon-numbered-list {
     background-image: url('/src/icons/numbered-list.svg');
-}
-
-.toolbar-icon {
-  width: 20px;
-  height: 20px;
-  display: inline-block;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  vertical-align: middle;
 }

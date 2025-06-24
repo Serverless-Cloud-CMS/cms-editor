@@ -22,6 +22,16 @@ import SaveIcon from '../icons/save.svg';
 import LoadIcon from '../icons/load.svg';
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 
+const Dropdown: React.FC<{ label: React.ReactNode; children: React.ReactNode }> = ({ label, children }) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <div className="toolbar-dropdown" onBlur={() => setOpen(false)} tabIndex={0}>
+            <button className="toolbar-item spaced" onClick={() => setOpen((v) => !v)} type="button">{label}</button>
+            {open && <div className="toolbar-dropdown-menu">{children}</div>}
+        </div>
+    );
+};
+
 interface ToolbarPluginProps  {
     onOpenImageModal?: () => void;
     setEditorRef?: (editor: any) => void;
@@ -372,14 +382,16 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
     return (
         <div className="toolbar">
             <div className="toolbar-group">
-                <select onChange={handleHeadingChange} className="toolbar-item" aria-label="Heading Level">
-                    <option value="p">Normal</option>
-                    <option value="h1">Heading 1</option>
-                    <option value="h2">Heading 2</option>
-                    <option value="h3">Heading 3</option>
-                    <option value="h4">Heading 4</option>
-                    <option value="h5">Heading 5</option>
-                </select>
+                <Dropdown label={<span><i className="icon-bold format" style={{opacity:0}}/>Format</span>}>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'p'}} as any)}>Normal</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h1'}} as any)}>Heading 1</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h2'}} as any)}>Heading 2</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h3'}} as any)}>Heading 3</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h4'}} as any)}>Heading 4</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h5'}} as any)}>Heading 5</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}><i className="icon-bulleted-list format"/> Bulleted List</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}><i className="icon-numbered-list format"/> Numbered List</button>
+                </Dropdown>
             </div>
             <div className="toolbar-divider" />
             <div className="toolbar-group">
@@ -431,23 +443,21 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
             </div>
             <div className="toolbar-divider" />
             <div className="toolbar-group">
-                <button onClick={addTable} className="toolbar-item spaced"><i className="icon-add-table format" /></button>
-                <button onClick={addRow} className="toolbar-item spaced"><i className="icon-add-row format" /></button>
-                <button onClick={addColumn} className="toolbar-item spaced"><i className="icon-add-column format" /></button>
-                <button onClick={deleteRow} className="toolbar-item spaced"><i className="icon-delete-row format" /></button>
-                <button onClick={deleteColumn} className="toolbar-item spaced"><i className="icon-delete-column format" /></button>
+                <Dropdown label={<span><i className="icon-add-image format"/> Image</span>}>
+                    <button className="toolbar-dropdown-item" onMouseDown={handleUploadImage}><i className="icon-add-image format"/> Upload Image</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={handleSelectImage}><i className="icon-select-image format"/> Select Image</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={handleLinkImage}><i className="icon-link-image format"/> Link Image</button>
+                </Dropdown>
             </div>
             <div className="toolbar-divider" />
             <div className="toolbar-group">
-                <button onClick={handleUploadImage} className="toolbar-item spaced" title="Upload Image">
-                    <i className="icon-add-image format" />
-                </button>
-                <button onClick={handleSelectImage} className="toolbar-item spaced" title="Select Image">
-                    <i className="icon-select-image format" />
-                </button>
-                <button onClick={handleLinkImage} className="toolbar-item spaced" title="Link Image">
-                    <i className="icon-link-image format" />
-                </button>
+                <Dropdown label={<span><i className="icon-add-table format"/> Table</span>}>
+                    <button className="toolbar-dropdown-item" onMouseDown={addTable}><i className="icon-add-table format"/> Add Table</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={addRow}><i className="icon-add-row format"/> Add Row</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={addColumn}><i className="icon-add-column format"/> Add Column</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={deleteRow}><i className="icon-delete-row format"/> Delete Row</button>
+                    <button className="toolbar-dropdown-item" onMouseDown={deleteColumn}><i className="icon-delete-column format"/> Delete Column</button>
+                </Dropdown>
             </div>
             <div className="toolbar-divider" />
             <div className="toolbar-group">
@@ -456,23 +466,6 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
                 </button>
                 <button onClick={handleOpenLoadModal} className="toolbar-item spaced" title="Load Post">
                     <i className="icon-load format toolbar-icon" />
-                </button>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-group">
-                <button
-                    onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
-                    className="toolbar-item spaced"
-                    title="Bulleted List"
-                >
-                    <i className="icon-bulleted-list format" />
-                </button>
-                <button
-                    onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
-                    className="toolbar-item spaced"
-                    title="Numbered List"
-                >
-                    <i className="icon-numbered-list format" />
                 </button>
             </div>
             <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
