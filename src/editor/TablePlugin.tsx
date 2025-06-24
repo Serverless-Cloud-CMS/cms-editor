@@ -27,7 +27,7 @@ const TablePlugin: React.FC = () => {
         );
     }, [editor]);
 
-    return <Paper className="table-plugin" elevation={1} sx={{ p: 1, mb: 2, bgcolor: 'background.paper' }} />;
+    return <div className="table-plugin" />;
 };
 
 export default TablePlugin;

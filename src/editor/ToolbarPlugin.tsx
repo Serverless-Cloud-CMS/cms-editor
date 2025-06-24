@@ -443,8 +443,6 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />Delete Column
           </MenuItem>
         </Menu>
-        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-        {/* More Menu (currently empty) */}
         <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
       </Box>
     );
