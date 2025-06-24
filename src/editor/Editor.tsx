@@ -69,16 +69,18 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         <LexicalComposer initialConfig={initialConfig}>
             <div className="editor-container">
                 <ToolbarPlugin dataService={dataService} onOpenImageModal={handleOpenImageModal} setEditorRef={setEditorRef} />
-                <TablePlugin />
-                <ListPlugin />
-                <RichTextPlugin
-                    contentEditable={<ContentEditable className="editor-input" />}
-                    placeholder={<div className="editor-placeholder">Enter text...</div>}
-                    ErrorBoundary={({ children }) => <>{children}</>}
-                />
-                <OnChangePlugin onChange={handleChange} />
-                <HistoryPlugin />
-                <SelectImageModal dataService={dataService} isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} />
+                <div className="editor-scrollable">
+                    <TablePlugin />
+                    <ListPlugin />
+                    <RichTextPlugin
+                        contentEditable={<ContentEditable className="editor-input" />}
+                        placeholder={<div className="editor-placeholder">Enter text...</div>}
+                        ErrorBoundary={({ children }) => <>{children}</>}
+                    />
+                    <OnChangePlugin onChange={handleChange} />
+                    <HistoryPlugin />
+                    <SelectImageModal dataService={dataService} isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} />
+                </div>
             </div>
         </LexicalComposer>
     );
