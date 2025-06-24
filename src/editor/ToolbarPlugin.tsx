@@ -22,6 +22,18 @@ import SaveIcon from '../icons/save.svg';
 import LoadIcon from '../icons/load.svg';
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 
+// Responsive label hook
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.matchMedia('(max-width: 600px)').matches);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+}
+
 const Dropdown: React.FC<{ label: React.ReactNode; children: React.ReactNode }> = ({ label, children }) => {
     const [open, setOpen] = useState(false);
     return (
@@ -379,10 +391,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
       );
     };
 
+    const isMobile = useIsMobile();
+
     return (
         <div className="toolbar">
             <div className="toolbar-group">
-                <Dropdown label={<span><i className="icon-bold format" style={{opacity:0}}/>Format</span>}>
+                <Dropdown label={<span><i className="icon-format format toolbar-icon" />{!isMobile && 'Format'}</span>}>
                     <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'p'}} as any)}>Normal</button>
                     <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h1'}} as any)}>Heading 1</button>
                     <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h2'}} as any)}>Heading 2</button>
@@ -443,7 +457,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
             </div>
             <div className="toolbar-divider" />
             <div className="toolbar-group">
-                <Dropdown label={<span><i className="icon-add-image format"/> Image</span>}>
+                <Dropdown label={<span><i className="icon-add-image format toolbar-icon" />{!isMobile && 'Image'}</span>}>
                     <button className="toolbar-dropdown-item" onMouseDown={handleUploadImage}><i className="icon-add-image format"/> Upload Image</button>
                     <button className="toolbar-dropdown-item" onMouseDown={handleSelectImage}><i className="icon-select-image format"/> Select Image</button>
                     <button className="toolbar-dropdown-item" onMouseDown={handleLinkImage}><i className="icon-link-image format"/> Link Image</button>
@@ -451,7 +465,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
             </div>
             <div className="toolbar-divider" />
             <div className="toolbar-group">
-                <Dropdown label={<span><i className="icon-add-table format"/> Table</span>}>
+                <Dropdown label={<span><i className="icon-add-table format toolbar-icon" />{!isMobile && 'Table'}</span>}>
                     <button className="toolbar-dropdown-item" onMouseDown={addTable}><i className="icon-add-table format"/> Add Table</button>
                     <button className="toolbar-dropdown-item" onMouseDown={addRow}><i className="icon-add-row format"/> Add Row</button>
                     <button className="toolbar-dropdown-item" onMouseDown={addColumn}><i className="icon-add-column format"/> Add Column</button>

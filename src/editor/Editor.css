@@ -164,7 +164,7 @@ select.toolbar-item {
     border-radius: 6px;
     background-color: #fff;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 10px;
     color: #333;
 }
 
@@ -236,10 +236,51 @@ i.icon-load{
     background-image: url('/src/icons/load.svg');
 }
 
+i.icon-format{
+    background-image: url('/src/icons/format.svg');
+}
+
 i.icon-bulleted-list {
     background-image: url('/src/icons/bulleted-list.svg');
 }
 
 i.icon-numbered-list {
     background-image: url('/src/icons/numbered-list.svg');
+}
+
+@media (max-width: 800px) {
+    .toolbar {
+        flex-wrap: wrap;
+        padding: 0 4px;
+        min-height: 48px;
+    }
+    .toolbar-group {
+        margin-right: 8px;
+        gap: 2px;
+    }
+    .toolbar-item, .toolbar-dropdown > button.toolbar-item {
+        min-width: 36px;
+        min-height: 36px;
+        font-size: 16px;
+        padding: 0 4px;
+    }
+    .toolbar-dropdown-menu {
+        min-width: 140px;
+        font-size: 15px;
+        right: 0;
+        left: auto;
+    }
+    .toolbar-dropdown-item {
+        padding: 8px 12px;
+        font-size: 15px;
+        gap: 8px;
+    }
+    .toolbar-icon, .toolbar-dropdown-item i.format, .toolbar-item i.format {
+        width: 18px;
+        height: 18px;
+        margin-right: 6px;
+    }
+    .toolbar-dropdown-item i.format {
+        margin-right: 8px;
+    }
 }
