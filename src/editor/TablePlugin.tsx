@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { INSERT_TABLE_COMMAND, $createTableNodeWithDimensions } from '@lexical/table';
 import {$getSelection, $isRangeSelection} from "lexical";
+import { Paper } from '@mui/material';
 import './TablePlugin.css';
 
 const TablePlugin: React.FC = () => {
@@ -26,7 +27,7 @@ const TablePlugin: React.FC = () => {
         );
     }, [editor]);
 
-    return <div className="table-plugin" />;
+    return <Paper className="table-plugin" elevation={1} sx={{ p: 1, mb: 2, bgcolor: 'background.paper' }} />;
 };
 
 export default TablePlugin;

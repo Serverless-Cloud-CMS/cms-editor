@@ -20,6 +20,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { Box, Paper } from '@mui/material';
 
 
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
@@ -66,23 +67,24 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     }, [editorRef]);
 
     return (
-        <LexicalComposer initialConfig={initialConfig}>
-            <div className="editor-container">
-                <ToolbarPlugin dataService={dataService} onOpenImageModal={handleOpenImageModal} setEditorRef={setEditorRef} />
-                <div className="editor-scrollable">
-                    <TablePlugin />
-                    <ListPlugin />
+        <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', my: 2 }}>
+            <Paper elevation={2} sx={{ p: 2 }}>
+                {/* Editor core UI */}
+                <LexicalComposer initialConfig={initialConfig}>
+                    <ToolbarPlugin dataService={dataService} setEditorRef={setEditorRef} onOpenImageModal={() => setImageModalOpen(true)} />
                     <RichTextPlugin
                         contentEditable={<ContentEditable className="editor-input" />}
-                        placeholder={<div className="editor-placeholder">Enter text...</div>}
-                        ErrorBoundary={({ children }) => <>{children}</>}
+                        placeholder={<div style={{ opacity: 0.5 }}>Start typing...</div>}
+                        ErrorBoundary={({ children }) => <div className="editor-error">{children}</div>}
                     />
-                    <OnChangePlugin onChange={handleChange} />
                     <HistoryPlugin />
-                    <SelectImageModal dataService={dataService} isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} />
-                </div>
-            </div>
-        </LexicalComposer>
+                    <OnChangePlugin onChange={handleChange} />
+                    <ListPlugin />
+                    <TablePlugin />
+                    <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={() => {}} dataService={dataService} />
+                </LexicalComposer>
+            </Paper>
+        </Box>
     );
 };
 

@@ -2,6 +2,7 @@ import { DecoratorNode, NodeKey, SerializedLexicalNode, Spread, $getNodeByKey } 
 import * as React from 'react';
 import {JSX} from "react";
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { Box, Paper } from '@mui/material';
 
 export type ImagePayload = {
   src: string;
@@ -58,30 +59,38 @@ function ImageComponent({ src, alt, width, height, nodeKey }: { src: string; alt
   };
 
   return (
-    <span style={{ display: 'inline-block', position: 'relative' }}>
-      <img
-        ref={imgRef}
-        src={src}
-        alt={alt || ''}
-        style={{ maxWidth: '100%', width: size.width, height: size.height }}
-        width={size.width}
-        height={size.height}
-      />
-      <span
-        onMouseDown={handleMouseDown}
-        style={{
-          position: 'absolute',
-          right: 0,
-          bottom: 0,
-          width: 12,
-          height: 12,
-          background: '#ccc',
-          cursor: 'nwse-resize',
-          borderRadius: 2,
-          zIndex: 2,
-        }}
-      />
-    </span>
+    <Box sx={{ display: 'inline-block', position: 'relative', m: 1 }}>
+      <Paper elevation={2} sx={{ display: 'inline-block', p: 0, bgcolor: 'background.paper' }}>
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          width={size.width}
+          height={size.height}
+          style={{ display: 'block', maxWidth: '100%', borderRadius: 4 }}
+        />
+        {/* Resize handle */}
+        <Box
+          sx={{
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            width: 16,
+            height: 16,
+            bgcolor: 'grey.200',
+            borderRadius: '50%',
+            cursor: 'nwse-resize',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
+          onMouseDown={handleMouseDown}
+        >
+          <Box sx={{ width: 10, height: 10, borderRight: '2px solid #888', borderBottom: '2px solid #888' }} />
+        </Box>
+      </Paper>
+    </Box>
   );
 }
 

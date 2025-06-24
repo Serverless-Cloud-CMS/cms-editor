@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { CircularProgress, AppBar, Drawer, MenuItem, Toolbar, IconButton, Menu } from "@mui/material";
-import MenuIcon from '@mui/icons-material/Menu';
+import { CircularProgress, AppBar, Toolbar, Typography, Box, Paper, Stack } from "@mui/material";
 import styled from "@mui/material/styles/styled";
 import { config } from "../config";
 import Editor from "../editor/Editor";
+import dataService from "../helpers/DataService";
 
 // Styled components
 const Root = styled('div')({ flexGrow: 1 });
@@ -15,7 +15,7 @@ const ToolBarMix = styled('div')(({ theme }) => ({
 }));
 
 
-const Auth: React.FC  = () => {
+const NonAuth: React.FC  = () => {
     // State declarations
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -28,18 +28,22 @@ const Auth: React.FC  = () => {
 
 
     return (
-        <Root>
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
             <AppBar position="fixed">
                 <Toolbar>
-                    Serverless CMS Editor
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        Serverless CMS Editor
+                    </Typography>
                 </Toolbar>
             </AppBar>
-            <Content>
-                <ToolBarMix />
-               <Editor />
-                {loaded && <CircularProgress size={50} />}
-            </Content>
-        </Root>
+            <Box component="main" sx={{ flexGrow: 1, pt: 10, px: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Paper elevation={3} sx={{ width: '100%', maxWidth: 900, p: 3, mt: 2 }}>
+                    <Stack spacing={2} alignItems="center">
+                        {loaded && <CircularProgress size={50} />}
+                    </Stack>
+                </Paper>
+            </Box>
+        </Box>
     );
 };
 
@@ -63,4 +67,4 @@ class DataBus {
 
 const bus = new DataBus();
 
-export default Auth;
+export default NonAuth;

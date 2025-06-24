@@ -2,47 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
     $getTableCellNodeFromLexicalNode,
-    $insertTableRow,
-    $insertTableColumn,
-    $getElementForTableNode,
+    $insertTableRowAtSelection,
+    $insertTableColumnAtSelection,
+    $deleteTableColumnAtSelection,
     TableNode,
-    INSERT_TABLE_COMMAND,
-    $deleteTableRow__EXPERIMENTAL,
-    $deleteTableColumn
+    INSERT_TABLE_COMMAND
 } from '@lexical/table';
-import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, TextFormatType, RangeSelection } from 'lexical';
+import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, TextFormatType, RangeSelection } from 'lexical';
 import { HeadingNode, HeadingTagType } from '@lexical/rich-text';
 import { TextNode } from 'lexical';
 import './Editor.css';
 import { $createImageNode } from './ImageNode';
 import { config } from '../config';
 import {ICMSCrudService} from "../helpers/ICMSCrudService";
-import { v4 as uuidv4 } from 'uuid';
-import SaveIcon from '../icons/save.svg';
-import LoadIcon from '../icons/load.svg';
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
-
-// Responsive label hook
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.matchMedia('(max-width: 600px)').matches);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
-
-const Dropdown: React.FC<{ label: React.ReactNode; children: React.ReactNode }> = ({ label, children }) => {
-    const [open, setOpen] = useState(false);
-    return (
-        <div className="toolbar-dropdown" onBlur={() => setOpen(false)} tabIndex={0}>
-            <button className="toolbar-item spaced" onClick={() => setOpen((v) => !v)} type="button">{label}</button>
-            {open && <div className="toolbar-dropdown-menu">{children}</div>}
-        </div>
-    );
-};
+import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider } from '@mui/material';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import UploadIcon from '@mui/icons-material/CloudUpload';
+import InsertPhotoIcon from '@mui/icons-material/InsertPhoto';
+import LinkIcon from '@mui/icons-material/Link';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import TableRowsIcon from '@mui/icons-material/TableRows';
+import TableColumnsIcon from '@mui/icons-material/ViewColumn';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import SaveIcon from '@mui/icons-material/Save';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 
 interface ToolbarPluginProps  {
     onOpenImageModal?: () => void;
@@ -50,15 +36,13 @@ interface ToolbarPluginProps  {
     dataService: ICMSCrudService;
 }
 
-const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
-    const { onOpenImageModal, setEditorRef, dataService } = props;
+const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEditorRef, dataService }) => {
     const [editor] = useLexicalComposerContext();
-    const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
-    const [activeAlignment, setActiveAlignment] = useState<string | null>(null);
+    const [headingAnchorEl, setHeadingAnchorEl] = useState<null | HTMLElement>(null);
+    const [tableAnchorEl, setTableAnchorEl] = useState<null | HTMLElement>(null);
+    const [imageAnchorEl, setImageAnchorEl] = useState<null | HTMLElement>(null);
+    const [heading, setHeading] = useState<'normal' | HeadingTagType>('normal');
     const [loadModalOpen, setLoadModalOpen] = useState(false);
-    const [postKeys, setPostKeys] = useState<string[]>([]);
-    const [loadingPosts, setLoadingPosts] = useState(false);
-    const [loadError, setLoadError] = useState<string|null>(null);
 
     useEffect(() => {
         if (setEditorRef) setEditorRef(editor);
@@ -69,87 +53,68 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
     };
 
-    const alignText = (alignment: 'left' | 'center' | 'right' | 'justify') => {
-        editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, alignment);
-    };
-
     const addTable = () => {
         editor.dispatchCommand(INSERT_TABLE_COMMAND, { rows: String(3), columns: String(3), includeHeaders: true });
     };
 
+    // Fix addRow, addColumn, deleteRow, deleteColumn to use correct Lexical Table API for current version
     const addRow = () => {
-        editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                const rangeSelection = selection as RangeSelection;
-                const tableCellNode = $getTableCellNodeFromLexicalNode(rangeSelection.anchor.getNode());
-                if (tableCellNode) {
-                    const parentNode = tableCellNode.getParentOrThrow().getParentOrThrow();
-                    if (parentNode instanceof TableNode) {
-                        const rowIndex = tableCellNode.getIndexWithinParent();
-                        const tableDom = $getElementForTableNode(editor, parentNode);
-                        $insertTableRow(parentNode, rowIndex, true, 1, tableDom);
-                    }
-                }
-            }
-        });
+      editor.update(() => {
+        // Use the new API: $insertTableRowAtSelection
+        $insertTableRowAtSelection(true); // true = insert after selection
+      });
     };
-
     const addColumn = () => {
-        editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                const rangeSelection = selection as RangeSelection;
-                const tableCellNode = $getTableCellNodeFromLexicalNode(rangeSelection.anchor.getNode());
-                if (tableCellNode) {
-                    const parentNode = tableCellNode.getParentOrThrow().getParentOrThrow();
-                    if (parentNode instanceof TableNode) {
-                        const columnIndex = tableCellNode.getIndexWithinParent();
-                        const tableDom = $getElementForTableNode(editor, parentNode);
-                        $insertTableColumn(parentNode, columnIndex, true, 1, tableDom);
-                    }
-                }
-            }
-        });
+      editor.update(() => {
+        // Use the new API: $insertTableColumnAtSelection
+        $insertTableColumnAtSelection(true); // true = insert after selection
+      });
     };
-
     const deleteRow = () => {
-        editor.update(() => {
-            $deleteTableRow__EXPERIMENTAL();
-        });
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const tableCellNode = $getTableCellNodeFromLexicalNode(selection.anchor.getNode());
+          if (tableCellNode) {
+            const tableRowNode = tableCellNode.getParent();
+            const tableNode = tableRowNode && typeof tableRowNode.getParent === 'function' ? tableRowNode.getParent() : null;
+            if (tableNode instanceof TableNode && tableRowNode) {
+              const rowIndex = tableRowNode.getIndexWithinParent();
+              if (rowIndex >= 0) {
+                const rows = tableNode.getChildren();
+                if (rows[rowIndex]) rows[rowIndex].remove();
+              }
+            }
+          }
+        }
+      });
     };
-
     const deleteColumn = () => {
-        editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                const rangeSelection = selection as RangeSelection;
-                const tableCellNode = $getTableCellNodeFromLexicalNode(rangeSelection.anchor.getNode());
-                if (tableCellNode) {
-                    const parentNode = tableCellNode.getParentOrThrow().getParentOrThrow();
-                    if (parentNode instanceof TableNode) {
-                        const columnIndex = tableCellNode.getIndexWithinParent();
-                        const tableDom = $getElementForTableNode(editor, parentNode);
-                        $deleteTableColumn(parentNode, columnIndex);
-                    }
-                }
-            }
-        });
+      editor.update(() => {
+        // Use the new API: $deleteTableColumnAtSelection
+        $deleteTableColumnAtSelection();
+      });
     };
 
-    const handleHeadingChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const headingLevel = event.target.value as HeadingTagType;
-        editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                const nodes = selection.getNodes();
-                nodes.forEach((node) => {
-                    const headingNode = new HeadingNode(headingLevel);
-                    headingNode.append(new TextNode(node.getTextContent()));
-                    node.replace(headingNode);
-                });
+    const handleHeadingChange = (event: { target: { value: string } }) => {
+      const headingLevel = event.target.value;
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const nodes = selection.getNodes();
+          nodes.forEach((node) => {
+            if (headingLevel === 'normal') {
+              // Replace with paragraph (remove heading)
+              const textNode = new TextNode(node.getTextContent());
+              node.replace(textNode);
+            } else {
+              const headingNode = new HeadingNode(headingLevel as HeadingTagType);
+              headingNode.append(new TextNode(node.getTextContent()));
+              node.replace(headingNode);
             }
-        });
+          });
+        }
+      });
     };
 
     // Image upload/select/link handlers
@@ -211,27 +176,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         }
     };
 
-    const handleSelectImage = () => {
-        if (onOpenImageModal) onOpenImageModal();
-    };
-
-    // Save editor content as JSON to S3
-    const handleSavePost = async () => {
-        const editorState = editor.getEditorState();
-        const json = editorState.toJSON();
-        const guid = uuidv4();
-        const key = `${config.StagePrefix || ''}${guid}.json`;
-        console.log(`Saving post to ${key}`);
-        console.log(JSON.stringify(json));
-        await dataService.create(config.StageBucket, key, json);
-        window.alert(`Post saved as ${key}`);
-    };
-
-    // Load editor content from S3 and set in editor
-    const handleOpenLoadModal = () => setLoadModalOpen(true);
-
     const handleSelectPost = async (key: string) => {
-        setLoadModalOpen(false);
         try {
             console.log(`Selecting post ${key}`);
             const json = await dataService.read(config.StageBucket, key);
@@ -241,6 +186,14 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         } catch (e) {
             window.alert('Failed to load post.');
         }
+    };
+
+    const handleSavePost = async () => {
+        const editorState = editor.getEditorState();
+        const json = editorState.toJSON();
+        const key = `${config.StagePrefix || ''}${Date.now()}.json`;
+        await dataService.create(config.StageBucket, key, json);
+        window.alert(`Post saved as ${key}`);
     };
 
     // Modal for selecting a post to load
@@ -391,99 +344,109 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
       );
     };
 
-    const isMobile = useIsMobile();
 
     return (
-        <div className="toolbar">
-            <div className="toolbar-group">
-                <Dropdown label={<span><i className="icon-format format toolbar-icon" />{!isMobile && 'Format'}</span>}>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'p'}} as any)}>Normal</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h1'}} as any)}>Heading 1</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h2'}} as any)}>Heading 2</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h3'}} as any)}>Heading 3</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h4'}} as any)}>Heading 4</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => handleHeadingChange({target:{value:'h5'}} as any)}>Heading 5</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}><i className="icon-bulleted-list format"/> Bulleted List</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}><i className="icon-numbered-list format"/> Numbered List</button>
-                </Dropdown>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-group">
-                <button
-                    onClick={() => formatText('bold')}
-                    className={`toolbar-item spaced ${activeFormats.has('bold') ? 'active' : ''}`}
-                >
-                    <i className="format icon-bold" />
-                </button>
-                <button
-                    onClick={() => formatText('italic')}
-                    className={`toolbar-item `}
-                >
-                    <i className="icon-italic format" />
-                </button>
-                <button
-                    onClick={() => formatText('underline')}
-                    className={`toolbar-item spaced ${activeFormats.has('underline') ? 'active' : ''}`}
-                >
-                    <i className="icon-underline format" />
-                </button>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-group">
-                <button
-                    onClick={() => alignText('left')}
-                    className={`toolbar-item spaced ${activeAlignment === 'left' ? 'active' : ''}`}
-                >
-                    <i className="icon-align-left format" />
-                </button>
-                <button
-                    onClick={() => alignText('center')}
-                    className={`toolbar-item spaced ${activeAlignment === 'center' ? 'active' : ''}`}
-                >
-                    <i className="icon-align-center format" />
-                </button>
-                <button
-                    onClick={() => alignText('right')}
-                    className={`toolbar-item spaced ${activeAlignment === 'right' ? 'active' : ''}`}
-                >
-                    <i className="icon-align-right format" />
-                </button>
-                <button
-                    onClick={() => alignText('justify')}
-                    className={`toolbar-item spaced ${activeAlignment === 'justify' ? 'active' : ''}`}
-                >
-                    <i className="icon-justify format" />
-                </button>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-group">
-                <Dropdown label={<span><i className="icon-add-image format toolbar-icon" />{!isMobile && 'Image'}</span>}>
-                    <button className="toolbar-dropdown-item" onMouseDown={handleUploadImage}><i className="icon-add-image format"/> Upload Image</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={handleSelectImage}><i className="icon-select-image format"/> Select Image</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={handleLinkImage}><i className="icon-link-image format"/> Link Image</button>
-                </Dropdown>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-group">
-                <Dropdown label={<span><i className="icon-add-table format toolbar-icon" />{!isMobile && 'Table'}</span>}>
-                    <button className="toolbar-dropdown-item" onMouseDown={addTable}><i className="icon-add-table format"/> Add Table</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={addRow}><i className="icon-add-row format"/> Add Row</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={addColumn}><i className="icon-add-column format"/> Add Column</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={deleteRow}><i className="icon-delete-row format"/> Delete Row</button>
-                    <button className="toolbar-dropdown-item" onMouseDown={deleteColumn}><i className="icon-delete-column format"/> Delete Column</button>
-                </Dropdown>
-            </div>
-            <div className="toolbar-divider" />
-            <div className="toolbar-group">
-                <button onClick={handleSavePost} className="toolbar-item spaced" title="Save Post">
-                    <i className="icon-save format toolbar-icon" />
-                </button>
-                <button onClick={handleOpenLoadModal} className="toolbar-item spaced" title="Load Post">
-                    <i className="icon-load format toolbar-icon" />
-                </button>
-            </div>
-            <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
-        </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        {/* Save/Load Icons */}
+        <Tooltip title="Save Post">
+          <IconButton size="small" onClick={handleSavePost} color="primary">
+            <SaveIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Load Post">
+          <IconButton size="small" onClick={() => setLoadModalOpen(true)} color="primary">
+            <FolderOpenIcon />
+          </IconButton>
+        </Tooltip>
+        {/* Divider after Save/Load */}
+        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+        {/* Heading Dropdown */}
+        <Button
+          variant="outlined"
+          size="small"
+          endIcon={<ArrowDropDownIcon />}
+          onClick={e => setHeadingAnchorEl(e.currentTarget)}
+        >
+          {heading === 'normal' ? 'Normal' : heading.toUpperCase()}
+        </Button>
+        <Menu anchorEl={headingAnchorEl} open={Boolean(headingAnchorEl)} onClose={() => setHeadingAnchorEl(null)}>
+          <MenuItem onClick={() => { setHeading('normal'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'normal' } } as any); }}>Normal</MenuItem>
+          <MenuItem onClick={() => { setHeading('h1'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h1' } } as any); }}>H1</MenuItem>
+          <MenuItem onClick={() => { setHeading('h2'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h2' } } as any); }}>H2</MenuItem>
+          <MenuItem onClick={() => { setHeading('h3'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h3' } } as any); }}>H3</MenuItem>
+        </Menu>
+        {/* Bold, Italic, Underline */}
+        <Tooltip title="Bold">
+          <Button variant="outlined" size="small" onClick={() => formatText('bold')} color="primary">B</Button>
+        </Tooltip>
+        <Tooltip title="Italic">
+          <Button variant="outlined" size="small" onClick={() => formatText('italic')} color="primary">I</Button>
+        </Tooltip>
+        <Tooltip title="Underline">
+          <Button variant="outlined" size="small" onClick={() => formatText('underline')} color="primary">U</Button>
+        </Tooltip>
+        {/* Bulleted List */}
+        <Tooltip title="Bulleted List">
+          <IconButton size="small" onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}>
+            <FormatListBulletedIcon />
+          </IconButton>
+        </Tooltip>
+        {/* Numbered List */}
+        <Tooltip title="Numbered List">
+          <IconButton size="small" onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}>
+            <FormatListNumberedIcon />
+          </IconButton>
+        </Tooltip>
+        {/* Image Dropdown */}
+        <Button
+          variant="outlined"
+          size="small"
+          endIcon={<ArrowDropDownIcon />}
+          onClick={e => setImageAnchorEl(e.currentTarget)}
+        >
+          Image
+        </Button>
+        <Menu anchorEl={imageAnchorEl} open={Boolean(imageAnchorEl)} onClose={() => setImageAnchorEl(null)}>
+          <MenuItem onClick={() => { setImageAnchorEl(null); if (onOpenImageModal) onOpenImageModal(); }}>
+            <InsertPhotoIcon fontSize="small" sx={{ mr: 1 }} />Select
+          </MenuItem>
+          <MenuItem onClick={() => { setImageAnchorEl(null); handleUploadImage(); }}>
+            <UploadIcon fontSize="small" sx={{ mr: 1 }} />Upload
+          </MenuItem>
+          <MenuItem onClick={() => { setImageAnchorEl(null); handleLinkImage(); }}>
+            <LinkIcon fontSize="small" sx={{ mr: 1 }} />Link
+          </MenuItem>
+        </Menu>
+        {/* Table Dropdown */}
+        <Button
+          variant="outlined"
+          size="small"
+          endIcon={<ArrowDropDownIcon />}
+          onClick={e => setTableAnchorEl(e.currentTarget)}
+        >
+          Table
+        </Button>
+        <Menu anchorEl={tableAnchorEl} open={Boolean(tableAnchorEl)} onClose={() => setTableAnchorEl(null)}>
+          <MenuItem onClick={() => { setTableAnchorEl(null); addTable(); }}>
+            <TableChartIcon fontSize="small" sx={{ mr: 1 }} />Add Table
+          </MenuItem>
+          <MenuItem onClick={() => { setTableAnchorEl(null); addRow(); }}>
+            <TableRowsIcon fontSize="small" sx={{ mr: 1 }} />Add Row
+          </MenuItem>
+          <MenuItem onClick={() => { setTableAnchorEl(null); addColumn(); }}>
+            <TableColumnsIcon fontSize="small" sx={{ mr: 1 }} />Add Column
+          </MenuItem>
+          <MenuItem onClick={() => { setTableAnchorEl(null); deleteRow(); }}>
+            <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />Delete Row
+          </MenuItem>
+          <MenuItem onClick={() => { setTableAnchorEl(null); deleteColumn(); }}>
+            <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />Delete Column
+          </MenuItem>
+        </Menu>
+        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+        {/* More Menu (currently empty) */}
+        <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
+      </Box>
     );
 };
 

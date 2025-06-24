@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { config } from '../config';
-import {ICMSCrudService} from "../helpers/ICMSCrudService";
+import { ICMSCrudService } from "../helpers/ICMSCrudService";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItemButton, ListItemText, CircularProgress, Box, TextField } from '@mui/material';
 
 interface SelectImageModalProps {
   isOpen: boolean;
@@ -30,9 +31,6 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
     }
   }, [selectedKey]);
 
-  // console.log("SelectImageModal initialized with dataService:", dataService);
-  const test = dataService.listMedia(config.StageBucket, config.MediaPrefix);
-
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
@@ -52,126 +50,35 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
   if (!isOpen) return null;
 
   return (
-    <div className="select-image-modal-backdrop">
-      <div className="select-image-modal">
-        <button className="close-btn" onClick={onClose}>×</button>
-        <h2>Select an Image</h2>
-        {loading && <div>Loading images...</div>}
-        {error && <div style={{ color: 'red' }}>{error}</div>}
-        <div className="image-gallery">
-          {imageKeys.map(key => {
-            const url = `${config.MediaProxy}/${key}`;
-            return (
-              <div key={key} className={`image-thumb${selectedKey === key ? ' selected' : ''}`} onClick={() => setSelectedKey(key)} title={key}>
-                <img src={url} alt={key} className="image-thumb-img" />
-              </div>
-            );
-          })}
-          {(!loading && imageKeys.length === 0 && !error) && <div>No images found.</div>}
-        </div>
-        <div style={{ marginTop: 20 }}>
-          <label style={{ marginRight: 10 }}>
-            Width:
-            <input type="number" min={20} max={2000} value={width} onChange={e => setWidth(Number(e.target.value))} style={{ width: 60, marginLeft: 5 }} />
-          </label>
-          <label style={{ marginRight: 10 }}>
-            Height:
-            <input type="number" min={20} max={2000} value={height} onChange={e => setHeight(Number(e.target.value))} style={{ width: 60, marginLeft: 5 }} />
-          </label>
-          <button
-            disabled={!selectedKey}
-            onClick={() => {
-              if (selectedKey) {
-                const url = `${config.MediaProxy}/${selectedKey}`;
-                onSelect(url, selectedKey, width, height);
-              }
-            }}
-            style={{ marginLeft: 10 }}
-          >
-            Insert Image
-          </button>
-        </div>
-      </div>
-      <style>{`
-        .select-image-modal-backdrop {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.4);
-          z-index: 1000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .select-image-modal {
-          background: #fff;
-          border-radius: 10px;
-          padding: 2rem 2.5rem 1.5rem 2.5rem;
-          min-width: 350px;
-          max-width: 90vw;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-          position: relative;
-        }
-        .close-btn {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          background: none;
-          border: none;
-          font-size: 2rem;
-          color: #888;
-          cursor: pointer;
-          transition: color 0.2s;
-        }
-        .close-btn:hover {
-          color: #222;
-        }
-        .image-gallery {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 18px;
-          margin-top: 1.5rem;
-          justify-content: flex-start;
-        }
-        .image-thumb {
-          width: 110px;
-          height: 110px;
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-          background: #f7f7f7;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          border: 2px solid transparent;
-          transition: border 0.2s, box-shadow 0.2s;
-        }
-        .image-thumb.selected {
-          border: 2px solid #0078d4;
-          box-shadow: 0 4px 16px rgba(0,120,212,0.12);
-        }
-        .image-thumb:hover {
-          border: 2px solid #0078d4;
-          box-shadow: 0 4px 16px rgba(0,120,212,0.12);
-        }
-        .image-thumb-img {
-          width: 100px;
-          height: 100px;
-          object-fit: cover;
-          border-radius: 4px;
-          background: #eee;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-        }
-        .select-image-modal h2 {
-          margin-top: 0;
-          font-size: 1.3rem;
-          font-weight: 600;
-          color: #222;
-        }
-      `}</style>
-    </div>
+    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Select an Image</DialogTitle>
+      <DialogContent>
+        {loading && <Box display="flex" justifyContent="center" my={2}><CircularProgress /></Box>}
+        {error && <Box color="error.main">{error}</Box>}
+        <List>
+          {imageKeys.map(key => (
+            <ListItemButton selected={selectedKey === key} onClick={() => setSelectedKey(key)} key={key}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <img
+                  src={`${config.MediaProxy}/${key}`}
+                  alt={key}
+                  style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, background: '#eee' }}
+                />
+                <ListItemText primary={key} />
+              </Box>
+            </ListItemButton>
+          ))}
+        </List>
+        <Box display="flex" gap={2} mt={2}>
+          <TextField label="Width" type="number" value={width} onChange={e => setWidth(Number(e.target.value))} size="small" />
+          <TextField label="Height" type="number" value={height} onChange={e => setHeight(Number(e.target.value))} size="small" />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={() => selectedKey && onSelect(`${config.MediaProxy}/${selectedKey}`, selectedKey, width, height)} disabled={!selectedKey} variant="contained">Select</Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
