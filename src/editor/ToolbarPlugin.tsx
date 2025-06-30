@@ -16,6 +16,7 @@ import { $createImageNode } from './ImageNode';
 import { config } from '../config';
 import {ICMSCrudService} from "../helpers/ICMSCrudService";
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
+import { $createCodeNode,$createCodeHighlightNode} from '@lexical/code';
 import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider } from '@mui/material';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
@@ -29,6 +30,7 @@ import TableColumnsIcon from '@mui/icons-material/ViewColumn';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import CodeIcon from '@mui/icons-material/Code';
 
 interface ToolbarPluginProps  {
     onOpenImageModal?: () => void;
@@ -98,9 +100,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
     const handleHeadingChange = (event: { target: { value: string } }) => {
       const headingLevel = event.target.value;
+
       editor.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
+          console.log(`Heading level changed to ${headingLevel}`);
           const nodes = selection.getNodes();
           nodes.forEach((node) => {
             if (headingLevel === 'normal') {
@@ -194,6 +198,18 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         const key = `${config.StagePrefix || ''}${Date.now()}.json`;
         await dataService.create(config.StageBucket, key, json);
         window.alert(`Post saved as ${key}`);
+    };
+
+    // Add code block formatting
+    const formatCodeBlock = () => {
+      editor.update(() => {
+        const selection = $getSelection();
+        const codeNode = $createCodeNode('javascript');
+        codeNode.append(new TextNode(selection?.getTextContent()));
+        if ($isRangeSelection(selection)) {
+          selection.insertNodes([codeNode]);
+        }
+      });
     };
 
     // Modal for selecting a post to load
@@ -375,7 +391,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           <MenuItem onClick={() => { setHeading('h2'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h2' } } as any); }}>H2</MenuItem>
           <MenuItem onClick={() => { setHeading('h3'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h3' } } as any); }}>H3</MenuItem>
         </Menu>
-        {/* Bold, Italic, Underline */}
+        {/* Bold, Italic, Underline, Code */}
         <Tooltip title="Bold">
           <Button variant="outlined" size="small" onClick={() => formatText('bold')} color="primary">B</Button>
         </Tooltip>
@@ -384,6 +400,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         </Tooltip>
         <Tooltip title="Underline">
           <Button variant="outlined" size="small" onClick={() => formatText('underline')} color="primary">U</Button>
+        </Tooltip>
+        <Tooltip title="Code Block">
+          <IconButton size="small" onClick={formatCodeBlock} color="primary">
+            <CodeIcon />
+          </IconButton>
         </Tooltip>
         {/* Bulleted List */}
         <Tooltip title="Bulleted List">

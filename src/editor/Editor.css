@@ -20,7 +20,7 @@
 }
 
 .editor-input {
-    min-height: 800px;
+    min-height: 1000px;
     width: 100%;
     outline: none;
     padding: 8px;
@@ -35,6 +35,71 @@
     position: relative;
     top: 8px;
     left: 8px;
+}
+
+.editor__code {
+    background-color: rgb(240, 242, 245);
+    font-family: Menlo, Consolas, Monaco, monospace;
+    display: block;
+    padding: 8px 8px 8px 52px;
+    line-height: 1.53;
+    font-size: 13px;
+    margin: 0;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    position: relative;
+    tab-size: 2;
+}
+.editor__code:before {
+    content: attr(data-gutter);
+    position: absolute;
+    background-color: #eee;
+    left: 0;
+    top: 0;
+    border-right: 1px solid #ccc;
+    padding: 8px;
+    color: #777;
+    white-space: pre-wrap;
+    text-align: right;
+    min-width: 25px;
+}
+
+.editor__tokenComment {
+    color: slategray;
+}
+.editor__tokenDeleted {
+    border-image: linear-gradient(to right, #ffcecb 50%, #ffebe9 50%) fill 0/0/0
+    100vw;
+}
+.editor__tokenInserted {
+    border-image: linear-gradient(to right, #aceebb 50%, #dafbe1 50%) fill 0/0/0
+    100vw;
+}
+.editor__tokenUnchanged {
+    border-image: linear-gradient(to right, #ddd 50%, #f0f2f5 50%) fill 0/0/0
+    100vw;
+}
+.editor__tokenPunctuation {
+    color: #999;
+}
+.editor__tokenProperty {
+    color: #905;
+}
+.editor__tokenSelector {
+    color: #690;
+}
+.editor__tokenOperator {
+    color: #9a6e3a;
+}
+.editor__tokenAttr {
+    color: #07a;
+}
+.editor__tokenVariable {
+    color: #e90;
+}
+.editor__tokenFunction {
+    color: #dd4a68;
 }
 
 .toolbar {

@@ -21,6 +21,9 @@ import { $generateHtmlFromNodes } from '@lexical/html';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { Box, Paper } from '@mui/material';
+import { CodeNode, CodeHighlightNode} from '@lexical/code';
+import 'prismjs/themes/prism.css';
+import CodeHighlightPlugin from "./CodeHighlightPlugin";
 
 
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
@@ -34,8 +37,43 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         },
         theme: {
             table: 'custom-table',
+            code: 'editor__code',
+            codeHighlight: {
+                atrule: 'editor__tokenAttr',
+                attr: 'editor__tokenAttr',
+                boolean: 'editor__tokenProperty',
+                builtin: 'editor__tokenSelector',
+                cdata: 'editor__tokenComment',
+                char: 'editor__tokenSelector',
+                class: 'editor__tokenFunction',
+                'class-name': 'editor__tokenFunction',
+                comment: 'editor__tokenComment',
+                constant: 'editor__tokenProperty',
+                deleted: 'editor__tokenDeleted',
+                doctype: 'editor__tokenComment',
+                entity: 'editor__tokenOperator',
+                function: 'editor__tokenFunction',
+                important: 'editor__tokenVariable',
+                inserted: 'editor__tokenInserted',
+                keyword: 'editor__tokenAttr',
+                namespace: 'editor__tokenVariable',
+                number: 'editor__tokenProperty',
+                operator: 'editor__tokenOperator',
+                prolog: 'editor__tokenComment',
+                property: 'editor__tokenProperty',
+                punctuation: 'editor__tokenPunctuation',
+                regex: 'editor__tokenVariable',
+                selector: 'editor__tokenSelector',
+                string: 'editor__tokenSelector',
+                symbol: 'editor__tokenProperty',
+                tag: 'editor__tokenProperty',
+                unchanged: 'editor__tokenUnchanged',
+                url: 'editor__tokenOperator',
+                variable: 'editor__tokenVariable',
+            },
+            
         },
-        nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode],
+        nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode, CodeHighlightNode,CodeNode],
     };
 
     const handleChange = (editorState: EditorState) => {
@@ -66,6 +104,8 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         }
     }, [editorRef]);
 
+
+
     return (
         <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', my: 2 }}>
             <Paper elevation={2} sx={{ p: 2 }}>
@@ -81,6 +121,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                     <OnChangePlugin onChange={handleChange} />
                     <ListPlugin />
                     <TablePlugin />
+                    <CodeHighlightPlugin/>
                     <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={() => {}} dataService={dataService} />
                 </LexicalComposer>
             </Paper>

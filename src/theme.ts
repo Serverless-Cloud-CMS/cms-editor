@@ -20,10 +20,10 @@ const themeOptions: ThemeOptions = {
         h6: {
             fontSize: '1rem'
         },
-    }
+    },
 
 };
 
-const theme = createTheme(themeOptions);
+const theme = createTheme(themeOptions,);
 
 export default theme;
