@@ -130,11 +130,20 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           const nodes = selection.getNodes();
           nodes.forEach((node) => {
             if (headingLevel === 'normal') {
-              // Replace with paragraph (remove heading)
-              const paragraphNode = $createParagraphNode();
-              paragraphNode.append(new TextNode(node.getTextContent()));
-              node.replace(paragraphNode);
+              // If node's parent is a HeadingNode, replace the parent
+              const parent = node.getParent();
+              if (parent instanceof HeadingNode) {
+                const paragraphNode = $createParagraphNode();
+                paragraphNode.append(new TextNode());
+                parent.replace(paragraphNode,true);
+              } else {
+                // fallback: replace node itself
+                const paragraphNode = $createParagraphNode();
+                paragraphNode.append(new TextNode(node.getTextContent()));
+                node.replace(paragraphNode);
+              }
             } else {
+              // Set as heading
               const headingNode = new HeadingNode(headingLevel as HeadingTagType);
               headingNode.append(new TextNode(node.getTextContent()));
               node.replace(headingNode);
@@ -470,6 +479,10 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           <MenuItem onClick={() => { setHeading('h1'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h1' } } as any); }}>H1</MenuItem>
           <MenuItem onClick={() => { setHeading('h2'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h2' } } as any); }}>H2</MenuItem>
           <MenuItem onClick={() => { setHeading('h3'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h3' } } as any); }}>H3</MenuItem>
+            <MenuItem onClick={() => { setHeading('h4'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h4' } } as any); }}>H4</MenuItem>
+            <MenuItem onClick={() => { setHeading('h5'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h5' } } as any); }}>H5</MenuItem>
+            <MenuItem onClick={() => { setHeading('h6'); setHeadingAnchorEl(null); handleHeadingChange({ target: { value: 'h6' } } as any); }}>H6</MenuItem>
+
         </Menu>
         {/* Bold, Italic, Underline, Code */}
         <Tooltip title="Bold">
