@@ -108,22 +108,26 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
 
     return (
         <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', my: 2 }}>
-            <Paper elevation={2} sx={{ p: 2 }}>
-                {/* Editor core UI */}
-                <LexicalComposer initialConfig={initialConfig}>
-                    <ToolbarPlugin dataService={dataService} setEditorRef={setEditorRef} onOpenImageModal={() => setImageModalOpen(true)} />
-                    <RichTextPlugin
-                        contentEditable={<ContentEditable className="editor-input" />}
-                        placeholder={<div style={{ opacity: 0.5 }}>Start typing...</div>}
-                        ErrorBoundary={({ children }) => <div className="editor-error">{children}</div>}
-                    />
-                    <HistoryPlugin />
-                    <OnChangePlugin onChange={handleChange} />
-                    <ListPlugin />
-                    <TablePlugin />
-                    <CodeHighlightPlugin/>
-                    <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} dataService={dataService} />
-                </LexicalComposer>
+            <Paper elevation={2} sx={{ p: 2, position: 'relative', height: '80vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                    <LexicalComposer initialConfig={initialConfig}>
+                        {/* Toolbar always visible (sticky) */}
+                        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
+                            <ToolbarPlugin dataService={dataService} setEditorRef={setEditorRef} onOpenImageModal={() => setImageModalOpen(true)} />
+                        </div>
+                        <RichTextPlugin
+                            contentEditable={<ContentEditable className="editor-input" />}
+                            placeholder={<div style={{ opacity: 0.5 }}>Start typing...</div>}
+                            ErrorBoundary={({ children }) => <div className="editor-error">{children}</div>}
+                        />
+                        <HistoryPlugin />
+                        <OnChangePlugin onChange={handleChange} />
+                        <ListPlugin />
+                        <TablePlugin />
+                        <CodeHighlightPlugin/>
+                        <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} dataService={dataService} />
+                    </LexicalComposer>
+                </div>
             </Paper>
         </Box>
     );
