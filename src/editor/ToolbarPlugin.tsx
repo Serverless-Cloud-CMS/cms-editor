@@ -31,6 +31,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import CodeIcon from '@mui/icons-material/Code';
+import { $createParagraphNode } from 'lexical';
 
 interface ToolbarPluginProps  {
     onOpenImageModal?: () => void;
@@ -57,6 +58,15 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
     const addTable = () => {
         editor.dispatchCommand(INSERT_TABLE_COMMAND, { rows: String(3), columns: String(3), includeHeaders: true });
+        editor.update(() => {
+            const selection = $getSelection();
+            if ($isRangeSelection(selection)) {
+                // Insert a new paragraph after the table and move cursor
+                const paragraph = $createParagraphNode();
+                selection.insertNodes([paragraph]);
+                paragraph.select();
+            }
+        });
     };
 
     // Fix addRow, addColumn, deleteRow, deleteColumn to use correct Lexical Table API for current version
@@ -132,24 +142,29 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             const arrayBuffer = await file.arrayBuffer();
             const data = new Uint8Array(arrayBuffer);
             const key = `${config.MediaPrefix}${Date.now()}_${file.name}`;
-            //const svc = dataService as AWSCMSCrudSvc;
             await dataService.createMedia(config.StageBucket, key, data, file.type);
             const url = `${config.MediaProxy}/${key}`;
             editor.update(() => {
                 const selection = $getSelection();
                 if (!$isRangeSelection(selection)) return;
-                // Insert image node at the current selection
                 const rangeSelection = selection as RangeSelection;
+                let imageNode;
                 if (rangeSelection.isCollapsed()) {
-                    // If selection is collapsed, insert at the cursor
-                    rangeSelection.insertNodes([$createImageNode({ src: url, alt: file.name })]);
+                    imageNode = $createImageNode({ src: url, alt: file.name });
+                    rangeSelection.insertNodes([imageNode]);
                 } else {
-                    // If selection is not collapsed, replace the selected text with the image
                     rangeSelection.getNodes().forEach(node => {
                         if (node instanceof TextNode) {
-                            node.replace($createImageNode({ src: url, alt: file.name }));
+                            imageNode = $createImageNode({ src: url, alt: file.name });
+                            node.replace(imageNode);
                         }
                     });
+                }
+                // Insert a new paragraph after the image and move cursor
+                if (imageNode) {
+                    const paragraph = $createParagraphNode();
+                    imageNode.insertAfter(paragraph);
+                    paragraph.select();
                 }
             });
         };
@@ -162,20 +177,25 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             editor.update(() => {
                 const selection = $getSelection();
                 if (!$isRangeSelection(selection)) return;
-                // Insert image node at the current selection
                 const rangeSelection = selection as RangeSelection;
+                let imageNode;
                 if (rangeSelection.isCollapsed()) {
-                    // If selection is collapsed, insert at the cursor
-                    rangeSelection.insertNodes([$createImageNode({ src: url })]);
+                    imageNode = $createImageNode({ src: url });
+                    rangeSelection.insertNodes([imageNode]);
                 } else {
-                    // If selection is not collapsed, replace the selected text with the image
                     rangeSelection.getNodes().forEach(node => {
                         if (node instanceof TextNode) {
-                            node.replace($createImageNode({ src: url }));
+                            imageNode = $createImageNode({ src: url });
+                            node.replace(imageNode);
                         }
                     });
                 }
-
+                // Insert a new paragraph after the image and move cursor
+                if (imageNode) {
+                    const paragraph = $createParagraphNode();
+                    imageNode.insertAfter(paragraph);
+                    paragraph.select();
+                }
             });
         }
     };
@@ -204,10 +224,15 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const formatCodeBlock = () => {
       editor.update(() => {
         const selection = $getSelection();
-        const codeNode = $createCodeNode('javascript');
-        codeNode.append(new TextNode(selection?.getTextContent()));
+        let codeNode;
         if ($isRangeSelection(selection)) {
+          codeNode = $createCodeNode('javascript');
+          codeNode.append(new TextNode(selection?.getTextContent()));
           selection.insertNodes([codeNode]);
+          // Insert a new paragraph after the code block and move cursor
+          const paragraph = $createParagraphNode();
+          codeNode.insertAfter(paragraph);
+          paragraph.select();
         }
       });
     };

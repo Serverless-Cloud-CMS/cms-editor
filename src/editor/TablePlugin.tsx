@@ -4,6 +4,7 @@ import { INSERT_TABLE_COMMAND, $createTableNodeWithDimensions } from '@lexical/t
 import {$getSelection, $isRangeSelection} from "lexical";
 import { Paper } from '@mui/material';
 import './TablePlugin.css';
+import { $createParagraphNode } from 'lexical';
 
 const TablePlugin: React.FC = () => {
    const [editor] = useLexicalComposerContext();
@@ -19,6 +20,10 @@ const TablePlugin: React.FC = () => {
                     const selection = editor.getEditorState().read(() => $getSelection());
                     if ($isRangeSelection(selection)) {
                         selection.insertNodes([tableNode]);
+                        // Insert a new paragraph after the table and move cursor
+                        const paragraph = $createParagraphNode();
+                        tableNode.insertAfter(paragraph);
+                        paragraph.select();
                     }
                 });
                 return true;
