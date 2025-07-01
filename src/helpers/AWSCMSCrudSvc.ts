@@ -41,6 +41,22 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         }
     }
 
+    async createHTML(bucket: string, key: string, data: string): Promise<void> {
+        try {
+            const params = {
+                Bucket: bucket,
+                Key: key,
+                Body: data,
+                ContentType: "text/html"
+            };
+            await this.s3Client.send(new PutObjectCommand(params));
+        } catch (error) {
+            // @ts-ignore
+            const err = error as Error;
+            throw new Error(`Failed to create object: ${err.message}`);
+        }
+    }
+
     async read(bucket: string, key: string): Promise<object> {
         try {
             const params = {

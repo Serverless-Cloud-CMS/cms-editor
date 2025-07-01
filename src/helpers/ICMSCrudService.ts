@@ -1,5 +1,6 @@
 export interface ICMSCrudService {
     create(bucket: string, key: string, data: object): Promise<void>;
+    createHTML(bucket: string, key: string, data: string): Promise<void>;
     read(bucket: string, key: string): Promise<object>;
     update(bucket: string, key: string, data: object): Promise<void>;
     delete(bucket: string, key: string): Promise<void>;

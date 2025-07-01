@@ -31,6 +31,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import CodeIcon from '@mui/icons-material/Code';
+import DownloadIcon from '@mui/icons-material/Download';
+import { $generateHtmlFromNodes } from '@lexical/html';
 import { $createParagraphNode } from 'lexical';
 import SavePostModal from './SavePostModal';
 
@@ -57,7 +59,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const [heading, setHeading] = useState<'normal' | HeadingTagType>('normal');
     const [loadModalOpen, setLoadModalOpen] = useState(false);
     const [saveModalOpen, setSaveModalOpen] = useState(false);
-    const [pendingSaveMeta, setPendingSaveMeta] = useState<{title: string, author: string} | null>(null);
+    const [lastSavedMeta, setLastSavedMeta] = useState<{ title?: string; author?: string; dateSaved?: string } | null>(null);
 
     useEffect(() => {
         if (setEditorRef) setEditorRef(editor);
@@ -122,23 +124,23 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
     const handleHeadingChange = (event: { target: { value: string } }) => {
       const headingLevel = event.target.value;
-
       editor.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
-          console.log(`Heading level changed to ${headingLevel}`);
           const nodes = selection.getNodes();
           nodes.forEach((node) => {
             if (headingLevel === 'normal') {
               // Replace with paragraph (remove heading)
-              const textNode = new TextNode(node.getTextContent());
-              node.replace(textNode);
+              const paragraphNode = $createParagraphNode();
+              paragraphNode.append(new TextNode(node.getTextContent()));
+              node.replace(paragraphNode);
             } else {
               const headingNode = new HeadingNode(headingLevel as HeadingTagType);
               headingNode.append(new TextNode(node.getTextContent()));
               node.replace(headingNode);
             }
           });
+
         }
       });
     };
@@ -217,6 +219,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             const postData = await dataService.read(config.StageBucket, key) as SavedPostData;
             if (onPostLoaded) onPostLoaded(postData);
             editor.setEditorState(editor.parseEditorState(JSON.stringify(postData.content)));
+            setLastSavedMeta(postData.meta || null);
             window.alert('Post loaded!');
         } catch (e) {
             window.alert('Failed to load post.');
@@ -229,7 +232,6 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
     const handleSaveModalClose = () => {
         setSaveModalOpen(false);
-        setPendingSaveMeta(null);
     };
 
     const handleSaveModalSave = async (meta: { title: string; author: string }) => {
@@ -243,6 +245,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         };
         const key = `${config.StagePrefix || ''}${Date.now()}.json`;
         await dataService.create(config.StageBucket, key, postData);
+        setLastSavedMeta(postData.meta);
         window.alert(`Post saved as ${key}`);
     };
 
@@ -261,6 +264,31 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           paragraph.select();
         }
       });
+    };
+
+    // Handler to publish as HTML
+    const handlePublishAsHtml = async () => {
+        let htmlString = '';
+        editor.getEditorState().read(() => {
+            htmlString = $generateHtmlFromNodes(editor, null);
+        });
+        if (!lastSavedMeta || !lastSavedMeta.title || !lastSavedMeta.author || !lastSavedMeta.dateSaved) {
+            window.alert('Please save your post first to set the title, author, and date.');
+            return;
+        }
+        const meta = lastSavedMeta;
+        const safeTitle = (meta.title || 'untitled')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        const fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>${meta.title}</title>\n<meta name=\"author\" content=\"${meta.author}\">\n<meta name=\"date\" content=\"${meta.dateSaved}\">\n</head>\n<body>\n${htmlString}\n</body>\n</html>`;
+        const key = `published/${safeTitle}.html`;
+        try {
+            await dataService.createHTML(config.StageBucket, key,fullHtml);
+            window.alert(`HTML published to S3 as ${key}`);
+        } catch (e: any) {
+            window.alert('Failed to publish HTML to S3: ' + (e && e.message ? e.message : e));
+        }
     };
 
     // Modal for selecting a post to load
@@ -414,7 +442,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
 
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid #eee', mb: 1, pb: 1 }}>
         {/* Save/Load Icons */}
         <Tooltip title="Save Post">
           <IconButton size="small" onClick={handleSavePost} color="primary">
@@ -516,6 +544,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />Delete Column
           </MenuItem>
         </Menu>
+        {/* Publish as HTML Button */}
+        <Tooltip title="Publish as HTML">
+          <IconButton onClick={handlePublishAsHtml} size="small">
+            <DownloadIcon />
+          </IconButton>
+        </Tooltip>
         <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
         <SavePostModal open={saveModalOpen} onClose={handleSaveModalClose} onSave={handleSaveModalSave} />
       </Box>
