@@ -122,7 +122,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                     <ListPlugin />
                     <TablePlugin />
                     <CodeHighlightPlugin/>
-                    <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={() => {}} dataService={dataService} />
+                    <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} dataService={dataService} />
                 </LexicalComposer>
             </Paper>
         </Box>
