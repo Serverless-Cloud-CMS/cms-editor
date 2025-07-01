@@ -1,5 +1,5 @@
 // `src/components/Editor.tsx`
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -29,6 +29,9 @@ import CodeHighlightPlugin from "./CodeHighlightPlugin";
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
     const [isImageModalOpen, setImageModalOpen] = useState(false);
     const [editorRef, setEditorRef] = useState<any>(null);
+
+    // Remove old postMeta state and use loadedPost state
+    const [loadedPost, setLoadedPost] = useState<{ meta?: { title?: string; author?: string; dateSaved?: string }, content?: any }>({});
 
     const initialConfig = {
         namespace: 'MyEditor',
@@ -104,16 +107,27 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         }
     }, [editorRef]);
 
-
-
     return (
         <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', my: 2 }}>
             <Paper elevation={2} sx={{ p: 2, position: 'relative', height: '80vh', display: 'flex', flexDirection: 'column' }}>
+                {/* Post Meta-Data Display */}
+                {(loadedPost.meta?.title || loadedPost.meta?.author) && (
+                    <div style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
+                        {loadedPost.meta?.title && <div style={{ fontSize: 22, fontWeight: 600 }}>{loadedPost.meta.title}</div>}
+                        {loadedPost.meta?.author && <div style={{ fontSize: 15, color: '#555' }}>By {loadedPost.meta.author}</div>}
+                        {loadedPost.meta?.dateSaved && <div style={{ fontSize: 12, color: '#888' }}>{loadedPost.meta.dateSaved}</div>}
+                    </div>
+                )}
                 <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                     <LexicalComposer initialConfig={initialConfig}>
                         {/* Toolbar always visible (sticky) */}
                         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
-                            <ToolbarPlugin dataService={dataService} setEditorRef={setEditorRef} onOpenImageModal={() => setImageModalOpen(true)} />
+                            <ToolbarPlugin
+                                dataService={dataService}
+                                setEditorRef={setEditorRef}
+                                onOpenImageModal={() => setImageModalOpen(true)}
+                                onPostLoaded={setLoadedPost}
+                            />
                         </div>
                         <RichTextPlugin
                             contentEditable={<ContentEditable className="editor-input" />}

@@ -16,7 +16,7 @@ import { $createImageNode } from './ImageNode';
 import { config } from '../config';
 import {ICMSCrudService} from "../helpers/ICMSCrudService";
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
-import { $createCodeNode,$createCodeHighlightNode} from '@lexical/code';
+import { $createCodeNode } from '@lexical/code';
 import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider } from '@mui/material';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
@@ -32,20 +32,32 @@ import SaveIcon from '@mui/icons-material/Save';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import CodeIcon from '@mui/icons-material/Code';
 import { $createParagraphNode } from 'lexical';
+import SavePostModal from './SavePostModal';
+
+// Define type for saved post data
+interface SavedPostData {
+  meta: { title: string; author: string; dateSaved: string };
+  content: any;
+}
+
+
 
 interface ToolbarPluginProps  {
     onOpenImageModal?: () => void;
     setEditorRef?: (editor: any) => void;
     dataService: ICMSCrudService;
+    onPostLoaded?: (post: SavedPostData) => void;
 }
 
-const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEditorRef, dataService }) => {
+const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEditorRef, dataService, onPostLoaded }) => {
     const [editor] = useLexicalComposerContext();
     const [headingAnchorEl, setHeadingAnchorEl] = useState<null | HTMLElement>(null);
     const [tableAnchorEl, setTableAnchorEl] = useState<null | HTMLElement>(null);
     const [imageAnchorEl, setImageAnchorEl] = useState<null | HTMLElement>(null);
     const [heading, setHeading] = useState<'normal' | HeadingTagType>('normal');
     const [loadModalOpen, setLoadModalOpen] = useState(false);
+    const [saveModalOpen, setSaveModalOpen] = useState(false);
+    const [pendingSaveMeta, setPendingSaveMeta] = useState<{title: string, author: string} | null>(null);
 
     useEffect(() => {
         if (setEditorRef) setEditorRef(editor);
@@ -202,21 +214,35 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
     const handleSelectPost = async (key: string) => {
         try {
-            console.log(`Selecting post ${key}`);
-            const json = await dataService.read(config.StageBucket, key);
-            console.log(`Selected post ${key}`);
-            editor.setEditorState(editor.parseEditorState(JSON.stringify(json)));
+            const postData = await dataService.read(config.StageBucket, key) as SavedPostData;
+            if (onPostLoaded) onPostLoaded(postData);
+            editor.setEditorState(editor.parseEditorState(JSON.stringify(postData.content)));
             window.alert('Post loaded!');
         } catch (e) {
             window.alert('Failed to load post.');
         }
     };
 
-    const handleSavePost = async () => {
+    const handleSavePost = () => {
+        setSaveModalOpen(true);
+    };
+
+    const handleSaveModalClose = () => {
+        setSaveModalOpen(false);
+        setPendingSaveMeta(null);
+    };
+
+    const handleSaveModalSave = async (meta: { title: string; author: string }) => {
+        setSaveModalOpen(false);
+        const dateSaved = new Date().toISOString();
         const editorState = editor.getEditorState();
-        const json = editorState.toJSON();
+        const content = editorState.toJSON();
+        const postData: SavedPostData = {
+            meta: { ...meta, dateSaved },
+            content
+        };
         const key = `${config.StagePrefix || ''}${Date.now()}.json`;
-        await dataService.create(config.StageBucket, key, json);
+        await dataService.create(config.StageBucket, key, postData);
         window.alert(`Post saved as ${key}`);
     };
 
@@ -292,8 +318,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <div className="image-gallery">
               {postKeys.map(key => (
                 <div key={key} className={`image-thumb${selectedKey === key ? ' selected' : ''}`} onClick={() => setSelectedKey(key)} title={key}>
-                  <div style={{fontSize:12,wordBreak:'break-all',marginBottom:4}}>{meta[key]?.title || key}</div>
-                  {meta[key]?.date && <div style={{fontSize:11, color:'#888'}}>{meta[key].date}</div>}
+                  <div style={{fontSize:14, fontWeight:'bold', wordBreak:'break-all', marginBottom:2}}>{meta[key]?.title || key}</div>
+                  <div style={{fontSize:12, color:'#555', marginBottom:2}}>{meta[key]?.author || ''}</div>
+                  {meta[key]?.dateSaved && <div style={{fontSize:11, color:'#888'}}>{meta[key].dateSaved}</div>}
                 </div>
               ))}
               {(!loading && postKeys.length === 0 && !error) && <div>No posts found.</div>}
@@ -490,6 +517,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           </MenuItem>
         </Menu>
         <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
+        <SavePostModal open={saveModalOpen} onClose={handleSaveModalClose} onSave={handleSaveModalSave} />
       </Box>
     );
 };
