@@ -180,15 +180,20 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
     }
 
     async uploadImageBlob(bucket: string, key: string, blob: Blob): Promise<void> {
-        const arrayBuffer = await blob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const params = {
-            Bucket: bucket,
-            Key: key,
-            Body: uint8Array,
-            ContentType: blob.type || 'image/png',
-        };
-        await this.s3Client.send(new PutObjectCommand(params));
+        try {
+            const arrayBuffer = await blob.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const params = {
+                Bucket: bucket,
+                Key: key,
+                Body: uint8Array,
+                ContentType: blob.type || 'image/png',
+            };
+            let res = await this.s3Client.send(new PutObjectCommand(params));
+        } catch (error) {
+            const err = error as Error;
+            throw new Error(`Failed to upload image blob: ${err.message}`);
+        }
     }
 
     private async streamToString(stream: any): Promise<string> {
