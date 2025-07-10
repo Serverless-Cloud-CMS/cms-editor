@@ -35,6 +35,8 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { $createParagraphNode } from 'lexical';
 import SavePostModal from './SavePostModal';
+import GenerateImageModal from './GenerateImageModal';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 // Define type for saved post data
 interface SavedPostData {
@@ -60,6 +62,32 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const [loadModalOpen, setLoadModalOpen] = useState(false);
     const [saveModalOpen, setSaveModalOpen] = useState(false);
     const [lastSavedMeta, setLastSavedMeta] = useState<{ title?: string; author?: string; dateSaved?: string } | null>(null);
+    const [generateModalOpen, setGenerateModalOpen] = useState(false);
+    const [generating, setGenerating] = useState(false);
+
+    // Handler for generating image with Bedrock
+    const handleGenerateImage = async (prompt: string, size: string) => {
+        setGenerating(true);
+        try {
+            // Call AWS Crud Svc to generate image with Bedrock
+            // This assumes dataService.generateImageWithBedrock exists and returns the image URL or blob
+            const imageUrl = await dataService.generateImageWithBedrock(prompt, size);
+            // Fetch the image as a blob
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            // Create a file name
+            const fileName = `bedrock-${Date.now()}.png`;
+            // Upload to S3 using dataService
+            await dataService.uploadImageBlob(config.StageBucket, config.StagePrefix + fileName, blob);
+            window.alert('Image generated and uploaded to S3!');
+            setGenerateModalOpen(false);
+            // Optionally, refresh image selection modal or state here
+        } catch (e: any) {
+            window.alert('Failed to generate or upload image: ' + (e && e.message ? e.message : e));
+        } finally {
+            setGenerating(false);
+        }
+    };
 
     useEffect(() => {
         if (setEditorRef) setEditorRef(editor);
@@ -563,6 +591,18 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <DownloadIcon />
           </IconButton>
         </Tooltip>
+        {/* Generate Image Icon */}
+        <Tooltip title="Generate Image with AI">
+          <IconButton size="small" onClick={() => setGenerateModalOpen(true)} color="primary">
+            <AutoAwesomeIcon />
+          </IconButton>
+        </Tooltip>
+        <GenerateImageModal
+          open={generateModalOpen}
+          onClose={() => setGenerateModalOpen(false)}
+          onGenerate={handleGenerateImage}
+          loading={generating}
+        />
         <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
         <SavePostModal open={saveModalOpen} onClose={handleSaveModalClose} onSave={handleSaveModalSave} />
       </Box>

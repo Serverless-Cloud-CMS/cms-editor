@@ -163,6 +163,34 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         }
     }
 
+    /**
+     * Generate an image using AWS Bedrock and save it to S3.
+     * @param prompt The text prompt for image generation.
+     * @param size The image size (e.g., '512x512', '1024x1024').
+     * @param bucket S3 bucket to save the image.
+     * @param keyPrefix S3 key prefix for the image.
+     * @returns The S3 key of the saved image.
+     */
+    async generateImageWithBedrock(prompt: string, size: string): Promise<string> {
+        // TODO: Replace this with actual Bedrock API integration
+        // This is a placeholder that simulates an image URL being returned
+        // You should implement the call to Bedrock's image generation API here
+        // and return the URL or a presigned S3 URL to the generated image
+        throw new Error('generateImageWithBedrock is not implemented.');
+    }
+
+    async uploadImageBlob(bucket: string, key: string, blob: Blob): Promise<void> {
+        const arrayBuffer = await blob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const params = {
+            Bucket: bucket,
+            Key: key,
+            Body: uint8Array,
+            ContentType: blob.type || 'image/png',
+        };
+        await this.s3Client.send(new PutObjectCommand(params));
+    }
+
     private async streamToString(stream: any): Promise<string> {
         const blob = new Blob([stream]);
         const response = new Response(blob);

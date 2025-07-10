@@ -9,4 +9,6 @@ export interface ICMSCrudService {
     updateMedia(bucket: string, key: string, data: Uint8Array, contentType: string): Promise<void>;
     deleteMedia(bucket: string, key: string): Promise<void>;
     listMedia(bucket: string, prefix: string): Promise<string[]>;
+    generateImageWithBedrock(prompt: string, size: string): Promise<string>;
+    uploadImageBlob(bucket: string, key: string, blob: Blob): Promise<void>;
 }
