@@ -30,3 +30,6 @@ coverage/
 *.log
 *.tgz
 
+# terraform files
+.terraform/
+tfplan
