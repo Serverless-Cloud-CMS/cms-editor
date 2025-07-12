@@ -47,6 +47,7 @@ else
   echo "export PS1='$NEW_PS1'" >> "$BASHRC_FILE"
 fi
 
+source /src/init.sh
 
 # Execute the arguments passed
 if [ $# -gt 0 ]; then

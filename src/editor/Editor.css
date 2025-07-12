@@ -313,7 +313,7 @@ i.icon-numbered-list {
     background-image: url('/src/icons/numbered-list.svg');
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
     .toolbar {
         flex-wrap: wrap;
         padding: 0 4px;

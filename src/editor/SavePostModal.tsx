@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
 
 export interface SavePostModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (meta: { title: string; author: string }) => void;
+  initialTitle?: string;
+  initialAuthor?: string;
 }
 
-const SavePostModal: React.FC<SavePostModalProps> = ({ open, onClose, onSave }) => {
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
+const SavePostModal: React.FC<SavePostModalProps> = ({ open, onClose, onSave, initialTitle = '', initialAuthor = '' }) => {
+  const [title, setTitle] = useState(initialTitle);
+  const [author, setAuthor] = useState(initialAuthor);
   const [error, setError] = useState('');
+
+  // Update state when props change or modal opens
+  useEffect(() => {
+    if (open) {
+      setTitle(initialTitle);
+      setAuthor(initialAuthor);
+      setError('');
+    }
+  }, [open, initialTitle, initialAuthor]);
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -64,4 +75,3 @@ const SavePostModal: React.FC<SavePostModalProps> = ({ open, onClose, onSave }) 
 };
 
 export default SavePostModal;
-

@@ -1,0 +1,42 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - cd ../editor
+      - npm install
+  build:
+    commands:
+      - echo Running Tests.
+      - echo Build started on `date`
+      - echo Compiling the Node.js code
+      - echo VITE_IDENTITYPOOLID="${IDENTITYPOOLID}"  >> .env
+      - echo VITE_USERPOOLID="${USERPOOLID}"  >> .env
+      - echo VITE_CLIENTID="${CLIENTID}"  >> .env
+      - echo VITE_LOGINDOMAIN="${SUBDOMAIN}" >> .env
+      - echo VITE_APPWEBDOMAIN="${SUBDOMAIN}.auth.${REGION}.amazoncognito.com" >> .env
+      - echo VITE_REGION="${REGION}" >> .env
+      - echo VITE_REDIRECTURISIGNIN="https://${CLOUDFRONT}" >> .env
+      - echo VITE_REDIRECTURISIGNOUT="https://${CLOUDFRONT}/signout" >> .env
+      - echo VITE_STAGEBUCKET="${WebSiteBucket}" >> .env
+      - echo VITE_STAGEPREFIX="stage/" >> .env
+      - echo VITE_PUBLISHBUCKET="${PublishBucket}" >> .env
+      - echo VITE_MEDIAPROXY="https://${CLOUDFRONT}/" >> .env
+      - echo VITE_RELEASEURL="${RELEASE_URL}" >> .env
+      - echo VITE_EVENTBUSNAME="${EVENTBUS}" >> .env
+      - echo VITE_EVENTRELEASESOURCE="${RELEASE_SOURCE}" >> .env
+      - echo VITE_METADATABUCKET="${METADATA_BUCKET}" >> .env
+      - echo VITE_METADATAPREFIX="${METADATA_PREFIX}" >> .env
+      - echo VITE_PREVIEWBUCKET="${PREVIEW_BUCKET}" >> .env
+      - echo VITE_PREVIEWURL="${PREVIEW_URL}" >> .env
+      - CI=True npm test
+      - npm install
+      - npm run build
+      - echo Build completed on `date`
+artifacts:
+  files:
+    - "**/*"
+  base-directory: editor/dist
+

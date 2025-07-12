@@ -1,0 +1,231 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Static Web Site CF Template
+
+Parameters:
+  WebSiteBucketName:
+    Type: String
+  Environment:
+    Type: String
+  NamePrefix:
+    Type: String
+  UserPoolName:
+    Type: String
+  SubDomain:
+    Type: String
+
+Resources:
+
+  CMSIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub "${NamePrefix} CMS Id Pool"
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        -
+          ClientId: !Ref CMSUserClient
+          ProviderName: !GetAtt CMSUserPool.ProviderName
+          ServerSideTokenCheck: false
+
+  CMSUserClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "${NamePrefix}Client"
+      UserPoolId: !Ref CMSUserPool
+      AllowedOAuthFlows:
+        - implicit
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - openid
+      CallbackURLs:
+        - "http://localhost:3000"
+      LogoutURLs:
+        - "http://localhost:3000/signout.html"
+      SupportedIdentityProviders:
+        - 'COGNITO'
+
+
+  CMSUnauthenticatedRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Federated:
+                - "cognito-identity.amazonaws.com"
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              "StringEquals":
+                "cognito-identity.amazonaws.com:aud": !Ref CMSIdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": "unauthenticated"
+      Policies:
+        - PolicyName: !Sub "${NamePrefix}-CMSUnauthenticatedPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-sync:*"
+                Resource: "*"
+  CMSAuthenticatedRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Federated:
+                - "cognito-identity.amazonaws.com"
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              "StringEquals":
+                "cognito-identity.amazonaws.com:aud": !Ref CMSIdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": "authenticated"
+      Policies:
+        - PolicyName: !Sub "${NamePrefix}-CMSAuthenticatedPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:PutAccountPublicAccessBlock"
+                  - "s3:GetAccountPublicAccessBlock"
+                  - "s3:ListAllMyBuckets"
+                  - "s3:HeadBucket"
+                  - "cognito-identity:*"
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-sync:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 'bedrock:invokeModel'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource:
+                  - Fn::Join:
+                    - ""
+                    - - "arn:aws:s3:::"
+                      - Ref: SitePublishBucket
+                      - "/*"
+                  - Fn::Join:
+                    - ""
+                    - - "arn:aws:s3:::"
+                      - Ref: SitePublishBucket
+  CMSIdentityPoolRoles:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref CMSIdentityPool
+      Roles:
+        "authenticated": !GetAtt CMSAuthenticatedRole.Arn
+        "unauthenticated": !GetAtt CMSUnauthenticatedRole.Arn
+
+  SitePublishBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref WebSiteBucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: 404.html
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            Id: myCORSRuleId1
+            MaxAge: 3600
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - POST
+              - PUT
+            AllowedOrigins:
+              - '*'
+            Id: myCORSRuleId1
+            MaxAge: 3600
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref:
+          WebSiteBucketName
+      PolicyDocument:
+        Id: MyPolicy
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource:
+              Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  -
+                    Ref:
+                      WebSiteBucketName
+                  - /*
+
+  CMSUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+        UnusedAccountValidityDays: 90
+      MfaConfiguration: 'OFF' # OPTIONAL for User Choice
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      UsernameAttributes:
+        - email # phone and/or email
+      UserPoolName: !Ref UserPoolName
+      UserPoolTags:
+        Environment: !Ref Environment
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref CMSUserPool
+      Domain: !Ref SubDomain
+
+
+
+
+Outputs:
+  CMSIdentityPoolId:
+    Value: !Ref CMSIdentityPool
+  ClientId:
+    Value: !Ref CMSUserClient
+  EditorWebSiteBucketName:
+    Value: !Ref SitePublishBucket
+  EditorPublishBucketName:
+    Value: !Ref SitePublishBucket
+  CMSUserPoolId:
+    Value: !Ref CMSUserPool
+    Export:
+      Name: !Sub "${AWS::StackName}-userpool-id"
+  CMSProviderName:
+    Value: !GetAtt CMSUserPool.ProviderName
+    Export:
+      Name: !Sub "${AWS::StackName}-provider-name"

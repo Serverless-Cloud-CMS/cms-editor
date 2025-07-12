@@ -1,5 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { ICMSCrudService } from "./ICMSCrudService";
+import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
+import { ICMSCrudService, ReleaseEventDetail, MetaData } from "./ICMSCrudService";
+import { config } from "../config";
 
 
 interface AWSCredentialsConfig {
@@ -13,9 +15,19 @@ interface AWSCredentialsConfig {
 
 export class AWSCMSCrudSvc implements ICMSCrudService {
     private s3Client: S3Client;
+    private eventBridgeClient: EventBridgeClient;
 
     constructor(config: AWSCredentialsConfig) {
         this.s3Client = new S3Client({
+            region: config.region,
+            credentials: {
+                accessKeyId: config.credentials.accessKeyId,
+                secretAccessKey: config.credentials.secretAccessKey,
+                sessionToken: config.credentials.sessionToken
+            }
+        });
+
+        this.eventBridgeClient = new EventBridgeClient({
             region: config.region,
             credentials: {
                 accessKeyId: config.credentials.accessKeyId,
@@ -208,5 +220,76 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         const response = new Response(blob);
         const buffer = await response.arrayBuffer();
         return new Uint8Array(buffer);
+    }
+
+    /**
+     * Retrieves meta-data for a post from the Workflow Service app
+     * @param postId The ID of the post
+     * @returns The meta-data for the post
+     */
+    async getMetaData(postId: string): Promise<MetaData> {
+        try {
+            const key = `${config.MetaDataPrefix}${postId}.json`;
+            const params = {
+                Bucket: config.MetaDataBucket,
+                Key: key
+            };
+            const command = new GetObjectCommand(params);
+            const response = await this.s3Client.send(command);
+            const data = await response.Body.transformToString();
+            return JSON.parse(data) as MetaData;
+        } catch (error) {
+            const err = error as Error;
+            throw new Error(`Failed to get meta-data: ${err.message}`);
+        }
+    }
+
+    /**
+     * Sends a release event to the Event Bus
+     * @param eventDetail The details of the release event
+     */
+    async sendReleaseEvent(eventDetail: ReleaseEventDetail): Promise<void> {
+        try {
+            const params = {
+                Entries: [
+                    {
+                        Source: config.ReleaseEventSource,
+                        DetailType: config.ReleaseType,
+                        Detail: JSON.stringify(eventDetail),
+                        EventBusName: config.ReleaseEventBusName
+                    }
+                ]
+            };
+            await this.eventBridgeClient.send(new PutEventsCommand(params));
+        } catch (error) {
+            const err = error as Error;
+            throw new Error(`Failed to send release event: ${err.message}`);
+        }
+    }
+
+    /**
+     * Polls for meta-data for a post with retries
+     * @param postId The ID of the post
+     * @param maxRetries The maximum number of retries (default: 12)
+     * @param retryDelay The delay between retries in milliseconds (default: 5000)
+     * @returns The meta-data for the post
+     */
+    async pollForMetaData(postId: string, maxRetries: number = 12, retryDelay: number = 5000): Promise<MetaData> {
+        let retries = 0;
+        while (retries < maxRetries) {
+            try {
+                console.log(`Polling for meta-data for post ${postId}...`);
+                const metaData = await this.getMetaData(postId);
+                return metaData;
+            } catch (error) {
+                retries++;
+                if (retries >= maxRetries) {
+                    throw new Error(`Failed to get meta-data after ${maxRetries} retries`);
+                }
+                // Wait for retryDelay milliseconds before trying again
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+        }
+        throw new Error(`Failed to get meta-data after ${maxRetries} retries`);
     }
 }

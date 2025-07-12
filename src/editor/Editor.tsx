@@ -20,7 +20,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { Box, Paper } from '@mui/material';
+import { Box, Paper, Typography, Link } from '@mui/material';
 import { CodeNode, CodeHighlightNode} from '@lexical/code';
 import 'prismjs/themes/prism.css';
 import CodeHighlightPlugin from "./CodeHighlightPlugin";
@@ -31,7 +31,18 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     const [editorRef, setEditorRef] = useState<any>(null);
 
     // Remove old postMeta state and use loadedPost state
-    const [loadedPost, setLoadedPost] = useState<{ meta?: { title?: string; author?: string; dateSaved?: string }, content?: any }>({});
+    const [loadedPost, setLoadedPost] = useState<{ 
+        meta?: { title?: string; author?: string; dateSaved?: string }, 
+        content?: any,
+        published?: boolean,
+        released?: boolean,
+        preview?: {
+            catalogEntryUri: string;
+        }
+    }>({});
+
+    // Track polling status
+    const [isPolling, setIsPolling] = useState(false);
 
     const initialConfig = {
         namespace: 'MyEditor',
@@ -74,7 +85,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                 url: 'editor__tokenOperator',
                 variable: 'editor__tokenVariable',
             },
-            
+
         },
         nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode, CodeHighlightNode,CodeNode],
     };
@@ -108,7 +119,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     }, [editorRef]);
 
     return (
-        <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', my: 2 }}>
+        <Box sx={{ width: '100%', maxWidth: 1000, mx: 'auto', my: 2 }}>
             <Paper elevation={2} sx={{ p: 2, position: 'relative', height: '80vh', display: 'flex', flexDirection: 'column' }}>
                 {/* Post Meta-Data Display */}
                 {(loadedPost.meta?.title || loadedPost.meta?.author) && (
@@ -116,6 +127,31 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                         {loadedPost.meta?.title && <div style={{ fontSize: 22, fontWeight: 600 }}>{loadedPost.meta.title}</div>}
                         {loadedPost.meta?.author && <div style={{ fontSize: 15, color: '#555' }}>By {loadedPost.meta.author}</div>}
                         {loadedPost.meta?.dateSaved && <div style={{ fontSize: 12, color: '#888' }}>{loadedPost.meta.dateSaved}</div>}
+
+                        {/* Publication and Release Status */}
+                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, mt: 1 }}>
+                            <Typography variant="caption" color={loadedPost.published ? "success.main" : "text.secondary"}>
+                                {loadedPost.published ? "Published ✓" : "Not Published"}
+                            </Typography>
+                            <Typography variant="caption" color={loadedPost.released ? "success.main" : "text.secondary"}>
+                                {loadedPost.released ? "Released ✓" : "Not Released"}
+                            </Typography>
+                            {loadedPost.preview?.catalogEntryUri && (
+                                <Link 
+                                    href={loadedPost.preview.catalogEntryUri} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    variant="caption"
+                                >
+                                    Preview Link
+                                </Link>
+                            )}
+                            {isPolling && (
+                                <Typography variant="caption" color="info.main">
+                                    Polling for meta-data...
+                                </Typography>
+                            )}
+                        </Box>
                     </div>
                 )}
                 <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
@@ -127,6 +163,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                                 setEditorRef={setEditorRef}
                                 onOpenImageModal={() => setImageModalOpen(true)}
                                 onPostLoaded={setLoadedPost}
+                                setIsPolling={setIsPolling}
                             />
                         </div>
                         <RichTextPlugin

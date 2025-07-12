@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
     $getTableCellNodeFromLexicalNode,
@@ -17,7 +18,7 @@ import { config } from '../config';
 import {ICMSCrudService} from "../helpers/ICMSCrudService";
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 import { $createCodeNode } from '@lexical/code';
-import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider } from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider, Link, Typography } from '@mui/material';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -32,6 +33,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import CodeIcon from '@mui/icons-material/Code';
 import DownloadIcon from '@mui/icons-material/Download';
+import PublishIcon from '@mui/icons-material/Publish';
+import SendIcon from '@mui/icons-material/Send';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { $createParagraphNode } from 'lexical';
 import SavePostModal from './SavePostModal';
@@ -40,8 +43,63 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 // Define type for saved post data
 interface SavedPostData {
+  id?: string;
+  template?: string;
+  title?: string;
+  category?: string;
+  published?: boolean;
+  postInfo?: {
+    author: string;
+    posted: string;
+  };
+  content?: {
+    type: string;
+    body: string;
+  } | any;
+  media?: Array<{
+    name: string;
+    description: string;
+    type: string;
+    order: number;
+    tags: string[];
+    key: string;
+  }>;
+  postKey?: string;
+  src?: string;
+  published_data?: {
+    id: string;
+    key: string;
+  };
+  srcVersion?: string;
+  key?: string;
   meta: { title: string; author: string; dateSaved: string };
-  content: any;
+  // New fields for version 4
+  released?: boolean;
+  preview?: {
+    catalogEntryUri: string;
+  };
+  release?: {
+    catalogEntryUri: string;
+    source: string;
+  };
+  preview_event?: {
+    post_id: string;
+    post_key: string;
+    post_srcVersion: string;
+    post_srcKey: string;
+    post_uri: string;
+    post_state: string;
+    source: string;
+  };
+  published_event?: {
+    post_id: string;
+    post_key: string;
+    post_srcVersion: string;
+    post_srcKey: string;
+    post_uri: string;
+    post_state: string;
+    source: string;
+  };
 }
 
 
@@ -51,9 +109,10 @@ interface ToolbarPluginProps  {
     setEditorRef?: (editor: any) => void;
     dataService: ICMSCrudService;
     onPostLoaded?: (post: SavedPostData) => void;
+    setIsPolling?: (isPolling: boolean) => void;
 }
 
-const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEditorRef, dataService, onPostLoaded }) => {
+const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEditorRef, dataService, onPostLoaded, setIsPolling }) => {
     const [editor] = useLexicalComposerContext();
     const [headingAnchorEl, setHeadingAnchorEl] = useState<null | HTMLElement>(null);
     const [tableAnchorEl, setTableAnchorEl] = useState<null | HTMLElement>(null);
@@ -61,7 +120,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const [heading, setHeading] = useState<'normal' | HeadingTagType>('normal');
     const [loadModalOpen, setLoadModalOpen] = useState(false);
     const [saveModalOpen, setSaveModalOpen] = useState(false);
-    const [lastSavedMeta, setLastSavedMeta] = useState<{ title?: string; author?: string; dateSaved?: string } | null>(null);
+    const [lastSavedPost, setLastSavedPost] = useState<SavedPostData | null>(null);
     const [generateModalOpen, setGenerateModalOpen] = useState(false);
     const [generating, setGenerating] = useState(false);
 
@@ -256,7 +315,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             const postData = await dataService.read(config.StageBucket, key) as SavedPostData;
             if (onPostLoaded) onPostLoaded(postData);
             editor.setEditorState(editor.parseEditorState(JSON.stringify(postData.content)));
-            setLastSavedMeta(postData.meta || null);
+            setLastSavedPost(postData);
             window.alert('Post loaded!');
         } catch (e) {
             window.alert('Failed to load post.');
@@ -264,7 +323,17 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     };
 
     const handleSavePost = () => {
-        setSaveModalOpen(true);
+        // If post has been saved previously, use existing title and author
+        if (lastSavedPost && lastSavedPost.meta && lastSavedPost.meta.title && lastSavedPost.meta.author) {
+            // Directly call handleSaveModalSave with existing metadata
+            handleSaveModalSave({
+                title: lastSavedPost.meta.title,
+                author: lastSavedPost.meta.author
+            });
+        } else {
+            // Otherwise, open the save modal
+            setSaveModalOpen(true);
+        }
     };
 
     const handleSaveModalClose = () => {
@@ -276,13 +345,80 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         const dateSaved = new Date().toISOString();
         const editorState = editor.getEditorState();
         const content = editorState.toJSON();
+
+        // Generate a safe title for the key
+        const safeTitle = (meta.title || 'untitled')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        // Use existing ID if available, otherwise generate a new one
+        const id = lastSavedPost?.id || uuidv4();
+        const postKey = `${id}_${safeTitle}`;
+        const key = `${config.StagePrefix || ''}${postKey}.json`;
+
+        // Generate HTML to parse for images
+        let htmlString = '';
+        editor.getEditorState().read(() => {
+            htmlString = $generateHtmlFromNodes(editor, null);
+        });
+
+        // Parse HTML for images
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, 'text/html');
+        const imgElements = doc.querySelectorAll('img');
+
+        // Extract image details and create media objects
+        const mediaItems: Array<{
+            name: string;
+            description: string;
+            type: string;
+            order: number;
+            tags: string[];
+            key: string;
+        }> = [];
+
+        imgElements.forEach((img, index) => {
+            const src = img.getAttribute('src') || '';
+            const alt = img.getAttribute('alt') || '';
+
+            // Extract the key from the src URL if it's a media URL
+            let key = src;
+            if (src.includes(config.MediaProxy)) {
+                key = src.replace(`${config.MediaProxy}/`, '');
+            }
+
+            // Create a media object for each image
+            mediaItems.push({
+                name: alt || `Image ${index + 1}`,
+                description: alt || `Image ${index + 1}`,
+                type: 'image',
+                order: index + 1,
+                tags: [],
+                key: key
+            });
+        });
+
         const postData: SavedPostData = {
+            id,
+            template: 'basic',
+            title: meta.title,
+            category: 'general',
+            published: false,
+            postInfo: {
+                author: meta.author,
+                posted: dateSaved
+            },
             meta: { ...meta, dateSaved },
-            content
+            content,
+            media: mediaItems,
+            postKey,
+            src: key
         };
-        const key = `${config.StagePrefix || ''}${Date.now()}.json`;
+
         await dataService.create(config.StageBucket, key, postData);
-        setLastSavedMeta(postData.meta);
+        setLastSavedPost(postData);
+        if (onPostLoaded) onPostLoaded(postData);
         window.alert(`Post saved as ${key}`);
     };
 
@@ -303,28 +439,198 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
       });
     };
 
-    // Handler to publish as HTML
-    const handlePublishAsHtml = async () => {
+    // Handler to release a post
+    const handleReleasePost = async () => {
+        if (!lastSavedPost || !lastSavedPost.published) {
+            window.alert('Please publish your post first before releasing it.');
+            return;
+        }
+
+        if (setIsPolling) {
+            // Check if we're already polling
+            const isCurrentlyPolling = document.querySelector('.MuiTypography-caption[color="info.main"]') !== null;
+            if (isCurrentlyPolling) {
+                window.alert('Please wait while we retrieve the meta-data for your post.');
+                return;
+            }
+        }
+
+        try {
+            // Create the release event detail
+            const eventDetail = {
+                post_id: lastSavedPost.id || '',
+                post_key: lastSavedPost.published_data?.key || '',
+                post_srcVersion: lastSavedPost.srcVersion || '',
+                post_srcKey: lastSavedPost.src || '',
+                post_uri: lastSavedPost.preview?.catalogEntryUri || `${config.PreviewURL}/${lastSavedPost.id}`,
+                post_state: 'preview',
+                source: config.ReleaseEventSource
+            };
+
+            // Send the release event
+            await dataService.sendReleaseEvent(eventDetail);
+            window.alert('Release event sent to Event Bus');
+
+            // Poll for updated meta-data
+            if (setIsPolling) setIsPolling(true);
+            try {
+                const metaData = await dataService.pollForMetaData(lastSavedPost.id || '');
+                console.log(`Meta-data retrieved after release:`, metaData);
+
+                // Update the post with the meta-data
+                const updatedPost = {
+                    ...lastSavedPost,
+                    released: true,
+                    preview: metaData.preview,
+                    release: metaData.release,
+                    preview_event: metaData.preview_event,
+                    published_event: metaData.published_event
+                };
+
+                // Update the lastSavedPost with the meta-data
+                setLastSavedPost(updatedPost);
+                if (onPostLoaded) onPostLoaded(updatedPost);
+
+                // Save the updated post to S3
+                await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
+                window.alert('Post released successfully');
+            } catch (metaError: any) {
+                window.alert('Post released, but failed to retrieve updated meta-data: ' + (metaError && metaError.message ? metaError.message : metaError));
+            } finally {
+                if (setIsPolling) setIsPolling(false);
+            }
+        } catch (e: any) {
+            window.alert('Failed to release post: ' + (e && e.message ? e.message : e));
+            if (setIsPolling) setIsPolling(false);
+        }
+    };
+
+    // Handler to publish as JSON
+    const handlePublishAsJson = async () => {
+        if (!lastSavedPost || !lastSavedPost.meta || !lastSavedPost.meta.title || !lastSavedPost.meta.author) {
+            window.alert('Please save your post first to set the title, author, and date.');
+            return;
+        }
+
+        // Generate HTML from the editor
         let htmlString = '';
         editor.getEditorState().read(() => {
             htmlString = $generateHtmlFromNodes(editor, null);
         });
-        if (!lastSavedMeta || !lastSavedMeta.title || !lastSavedMeta.author || !lastSavedMeta.dateSaved) {
-            window.alert('Please save your post first to set the title, author, and date.');
-            return;
-        }
-        const meta = lastSavedMeta;
-        const safeTitle = (meta.title || 'untitled')
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-        const fullHtml = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>${meta.title}</title>\n<meta name=\"author\" content=\"${meta.author}\">\n<meta name=\"date\" content=\"${meta.dateSaved}\">\n</head>\n<body>\n${htmlString}\n</body>\n</html>`;
-        const key = `published/${safeTitle}.html`;
+
+        // Parse HTML for images
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, 'text/html');
+        const imgElements = doc.querySelectorAll('img');
+
+        // Extract image details and create media objects
+        const mediaItems: Array<{
+            name: string;
+            description: string;
+            type: string;
+            order: number;
+            tags: string[];
+            key: string;
+        }> = [];
+
+        imgElements.forEach((img, index) => {
+            const src = img.getAttribute('src') || '';
+            const alt = img.getAttribute('alt') || '';
+
+            // Extract the key from the src URL if it's a media URL
+            let key = src;
+            if (src.includes(config.MediaProxy)) {
+                key = src.replace(`${config.MediaProxy}/`, '');
+            }
+
+            // Create a media object for each image
+            mediaItems.push({
+                name: alt || `Image ${index + 1}`,
+                description: alt || `Image ${index + 1}`,
+                type: 'image',
+                order: index + 1,
+                tags: [],
+                key: key
+            });
+        });
+
+        // Generate a unique ID for the published data
+        const publishedId = uuidv4();
+
+        // Create the published key using the ReadyForPublishPrefix
+        const publishedKey = `${config.ReadyForPublishPrefix}${lastSavedPost.postKey}.${publishedId}.json`;
+
+        // Create the JSON export
+        const jsonExport: SavedPostData = {
+            ...lastSavedPost,
+            published: true,
+            content: {
+                type: 'html',
+                body: htmlString
+            },
+            media: mediaItems,
+            published_data: {
+                id: publishedId,
+                key: publishedKey
+            },
+            srcVersion: lastSavedPost.srcVersion || `v${Date.now()}`, // Use existing srcVersion or generate a placeholder
+            key: publishedKey
+        };
+
         try {
-            await dataService.createHTML(config.StageBucket, key,fullHtml);
-            window.alert(`HTML published to S3 as ${key}`);
+            // Save the post to S3
+            await dataService.create(config.StageBucket, publishedKey, jsonExport);
+            window.alert(`JSON published to S3 as ${publishedKey}`);
+
+            // Update the lastSavedPost with the published status
+            const initialPublishedPost = {
+                ...lastSavedPost,
+                published: true,
+                published_data: {
+                    id: publishedId,
+                    key: publishedKey
+                }
+            };
+            setLastSavedPost(initialPublishedPost);
+            if (onPostLoaded) onPostLoaded(initialPublishedPost);
+
+            // Poll for meta-data
+            if (setIsPolling) setIsPolling(true);
+            try {
+                const metaData = await dataService.pollForMetaData(lastSavedPost.id || '');
+                console.log(`Meta-data retrieved:`, metaData);
+
+                // Update the post with the meta-data
+                const updatedPost = {
+                    ...lastSavedPost,
+                    published: true,
+                    published_data: {
+                        id: publishedId,
+                        key: publishedKey
+                    },
+                    postKey: metaData.postKey,
+                    src: metaData.src,
+                    preview: metaData.preview,
+                    released: metaData.released,
+                    release: metaData.release,
+                    preview_event: metaData.preview_event,
+                    published_event: metaData.published_event
+                };
+
+                // Update the lastSavedPost with the meta-data
+                setLastSavedPost(updatedPost);
+                if (onPostLoaded) onPostLoaded(updatedPost);
+
+                // Save the updated post to S3
+                await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
+                window.alert('Post published successfully');
+            } catch (metaError: any) {
+                window.alert('Post published, but failed to retrieve meta-data: ' + (metaError && metaError.message ? metaError.message : metaError));
+            } finally {
+                if (setIsPolling) setIsPolling(false);
+            }
         } catch (e: any) {
-            window.alert('Failed to publish HTML to S3: ' + (e && e.message ? e.message : e));
+            window.alert('Failed to publish JSON to S3: ' + (e && e.message ? e.message : e));
         }
     };
 
@@ -585,12 +891,34 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />Delete Column
           </MenuItem>
         </Menu>
-        {/* Publish as HTML Button */}
-        <Tooltip title="Publish as HTML">
-          <IconButton onClick={handlePublishAsHtml} size="small">
-            <DownloadIcon />
-          </IconButton>
+        {/* Publish as JSON Button */}
+        <Tooltip title={lastSavedPost ? "Publish as HTML" : "Save post first to enable publishing"}>
+          <span>
+            <IconButton 
+              onClick={handlePublishAsJson} 
+              size="small" 
+              disabled={!lastSavedPost || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
+              color={lastSavedPost?.published ? "success" : lastSavedPost ? "primary" : "default"}
+            >
+              <PublishIcon />
+            </IconButton>
+          </span>
         </Tooltip>
+
+        {/* Release Post Button */}
+        <Tooltip title={lastSavedPost?.published ? "Release Post" : "Publish post first to enable releasing"}>
+          <span>
+            <IconButton 
+              onClick={handleReleasePost} 
+              size="small" 
+              disabled={!lastSavedPost?.published || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
+              color={lastSavedPost?.released ? "success" : "primary"}
+            >
+              <SendIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         {/* Generate Image Icon */}
         <Tooltip title="Generate Image with AI">
           <IconButton size="small" onClick={() => setGenerateModalOpen(true)} color="primary">
@@ -604,7 +932,13 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           loading={generating}
         />
         <LoadPostModal isOpen={loadModalOpen} onClose={() => setLoadModalOpen(false)} onSelect={handleSelectPost} dataService={dataService} />
-        <SavePostModal open={saveModalOpen} onClose={handleSaveModalClose} onSave={handleSaveModalSave} />
+        <SavePostModal 
+                  open={saveModalOpen} 
+                  onClose={handleSaveModalClose} 
+                  onSave={handleSaveModalSave}
+                  initialTitle={lastSavedPost?.meta?.title || ''}
+                  initialAuthor={lastSavedPost?.meta?.author || ''}
+                />
       </Box>
     );
 };
