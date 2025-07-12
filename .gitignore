@@ -32,4 +32,6 @@ coverage/
 
 # terraform files
 .terraform/
+.terraform.*
 tfplan
+.terraform.lock.hcl
