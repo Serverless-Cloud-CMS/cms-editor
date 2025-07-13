@@ -38,5 +38,5 @@ phases:
 artifacts:
   files:
     - "**/*"
-  base-directory: editor/dist
+  base-directory: dist
 
