@@ -5,7 +5,6 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      - cd ../editor
       - npm install
   build:
     commands:
@@ -32,7 +31,7 @@ phases:
       - echo VITE_PREVIEWBUCKET="${PREVIEW_BUCKET}" >> .env
       - echo VITE_PREVIEWURL="${PREVIEW_URL}" >> .env
       - CI=True npm test
-      - npm install
+      - npm install --omit=dev
       - npm run build
       - echo Build completed on `date`
 artifacts:
