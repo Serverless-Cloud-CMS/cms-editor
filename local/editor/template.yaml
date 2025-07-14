@@ -12,6 +12,10 @@ Parameters:
     Type: String
   SubDomain:
     Type: String
+  CMSPublishBucket:
+    Type: String
+  MetadataBucket:
+    Type: String
 
 Resources:
 
@@ -106,7 +110,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'bedrock:invokeModel'
-                Resource: '*'
+                Resource: 'arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-micro-v1:0'
               - Effect: Allow
                 Action:
                   - "s3:*"
@@ -120,6 +124,24 @@ Resources:
                     - ""
                     - - "arn:aws:s3:::"
                       - Ref: SitePublishBucket
+                  - Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - Ref: CMSPublishBucket
+                        - "/*"
+                  - Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - Ref: CMSPublishBucket
+                  - Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - Ref: MetadataBucket
+                        - "/*"
+                  - Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - Ref: MetadataBucket
   CMSIdentityPoolRoles:
     Type: AWS::Cognito::IdentityPoolRoleAttachment
     Properties:

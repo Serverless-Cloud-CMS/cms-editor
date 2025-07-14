@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command, CopyObjectCommand } from "@aws-sdk/client-s3";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { ICMSCrudService, ReleaseEventDetail, MetaData } from "./ICMSCrudService";
 import { config } from "../config";
@@ -36,6 +36,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             }
         });
     }
+
 
     async create(bucket: string, key: string, data: object): Promise<void> {
         try {
@@ -229,7 +230,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      */
     async getMetaData(postId: string): Promise<MetaData> {
         try {
-            const key = `${config.MetaDataPrefix}${postId}.json`;
+            const key = `${config.MetaDataPrefix}${postId}`;
             const params = {
                 Bucket: config.MetaDataBucket,
                 Key: key
@@ -291,5 +292,27 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             }
         }
         throw new Error(`Failed to get meta-data after ${maxRetries} retries`);
+    }
+
+    /**
+     * Copies an object from a source bucket/key to a destination bucket/key
+     * @param sourceBucket The source S3 bucket
+     * @param sourceKey The source S3 key
+     * @param destinationBucket The destination S3 bucket
+     * @param destinationKey The destination S3 key
+     */
+    async copyObject(sourceBucket: string, sourceKey: string, destinationBucket: string, destinationKey: string): Promise<void> {
+        try {
+            const params = {
+                Bucket: destinationBucket,
+                CopySource: `${sourceBucket}/${sourceKey}`,
+                Key: destinationKey
+            };
+            await this.s3Client.send(new CopyObjectCommand(params));
+        } catch (error) {
+            // @ts-ignore
+            const err = error as Error;
+            throw new Error(`Failed to copy object: ${err.message}`);
+        }
     }
 }

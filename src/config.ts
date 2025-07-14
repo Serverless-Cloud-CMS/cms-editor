@@ -16,7 +16,6 @@ export interface Config {
     StagePrefix: string;
     MetaDataBucket: string;
     MetaDataPrefix: string;
-    PublishNotificationEndPoint: string;
     PublishBucket: string;
     ReleaseType: string;
     AIEnabled: boolean;
@@ -25,7 +24,6 @@ export interface Config {
     ReleaseEventSource: string;
     PreviewURL: string;
     ReleaseURL: string;
-    PublishPrefix: string;
     MediaPrefix: string;
     MediaProxy: string;
     MediaConfig: Record<string, string>;
@@ -44,7 +42,6 @@ export const config: Config = {
     Region: import.meta.env.VITE_REGION,
     MetaDataBucket: import.meta.env.VITE_METADATABUCKET,
     MetaDataPrefix: import.meta.env.VITE_METADATAPREFIX || "",
-    PublishNotificationEndPoint: import.meta.env.VITE_PUBLISHNOTIFICATIONENDPOINT,
     PublishBucket: import.meta.env.VITE_PUBLISHBUCKET,
     ReleaseType: import.meta.env.VITE_RELEASETYPE || "content-changes",
     AIEnabled: import.meta.env.VITE_AIENABLED === "true",
@@ -53,7 +50,6 @@ export const config: Config = {
     ReleaseEventSource: import.meta.env.VITE_RELEASEEVENTSOURCE || "content.published",
     PreviewURL: import.meta.env.VITE_PREVIEWURL,
     ReleaseURL: import.meta.env.VITE_RELEASEURL,
-    PublishPrefix: import.meta.env.VITE_PUBLISHPREFIX || "published/",
     AuthConfig: {
         ClientId: import.meta.env.VITE_CLIENTID,
         IdentityPoolId: import.meta.env.VITE_IDENTITYPOOLID,

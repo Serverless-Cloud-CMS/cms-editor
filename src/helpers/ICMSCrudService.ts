@@ -44,8 +44,7 @@ export interface ICMSCrudService {
     listMedia(bucket: string, prefix: string): Promise<string[]>;
     generateImageWithBedrock(prompt: string, size: string): Promise<string>;
     uploadImageBlob(bucket: string, key: string, blob: Blob): Promise<void>;
-
-    // New methods for Version 3
+    copyObject(sourceBucket: string, sourceKey: string, destinationBucket: string, destinationKey: string): Promise<void>;    // New methods for Version 3
     getMetaData(postId: string): Promise<MetaData>;
     sendReleaseEvent(eventDetail: ReleaseEventDetail): Promise<void>;
     pollForMetaData(postId: string, maxRetries?: number, retryDelay?: number): Promise<MetaData>;

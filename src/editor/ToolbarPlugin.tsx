@@ -9,7 +9,14 @@ import {
     TableNode,
     INSERT_TABLE_COMMAND
 } from '@lexical/table';
-import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, TextFormatType, RangeSelection } from 'lexical';
+import {
+    $getSelection,
+    $isRangeSelection,
+    FORMAT_TEXT_COMMAND,
+    TextFormatType,
+    RangeSelection,
+    ParagraphNode
+} from 'lexical';
 import { HeadingNode, HeadingTagType } from '@lexical/rich-text';
 import { TextNode } from 'lexical';
 import './Editor.css';
@@ -213,6 +220,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
       const headingLevel = event.target.value;
       editor.update(() => {
         const selection = $getSelection();
+
         if ($isRangeSelection(selection)) {
           const nodes = selection.getNodes();
           nodes.forEach((node) => {
@@ -232,11 +240,16 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             } else {
               // Set as heading
               const headingNode = new HeadingNode(headingLevel as HeadingTagType);
-              headingNode.append(new TextNode(node.getTextContent()));
-              node.replace(headingNode);
+              // headingNode.append(new TextNode(node.getTextContent()));
+              const parent = node.getParent();
+              if (parent instanceof ParagraphNode) {
+                  parent.replace(headingNode,true);
+              }else{
+                  headingNode.append(new TextNode(node.getTextContent()));
+                  node.replace(headingNode);
+              }
             }
           });
-
         }
       });
     };
@@ -558,8 +571,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         const publishedId = uuidv4();
 
         // Create the published key using the ReadyForPublishPrefix
+        console.log(lastSavedPost);
         const publishedKey = `${config.ReadyForPublishPrefix}${lastSavedPost.postKey}.${publishedId}.json`;
-
+        console.log('Publishing as JSON:', publishedKey);
         // Create the JSON export
         const jsonExport: SavedPostData = {
             ...lastSavedPost,
@@ -579,7 +593,16 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
         try {
             // Save the post to S3
-            await dataService.create(config.StageBucket, publishedKey, jsonExport);
+
+            // Iterate through media items and upload them
+            for (const mediaItem of jsonExport.media || []) {
+                if (mediaItem.key) {
+                    // Use the copyObject method to copy media from StageBucket to PublishBucket
+                    await dataService.copyObject(config.StageBucket, mediaItem.key, config.PublishBucket, mediaItem.key);
+                }
+            }
+
+            await dataService.create(config.PublishBucket, publishedKey, jsonExport);
             window.alert(`JSON published to S3 as ${publishedKey}`);
 
             // Update the lastSavedPost with the published status
@@ -608,8 +631,6 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                         id: publishedId,
                         key: publishedKey
                     },
-                    postKey: metaData.postKey,
-                    src: metaData.src,
                     preview: metaData.preview,
                     released: metaData.released,
                     release: metaData.release,
