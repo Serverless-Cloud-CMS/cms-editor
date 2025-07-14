@@ -280,14 +280,37 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         while (retries < maxRetries) {
             try {
                 console.log(`Polling for meta-data for post ${postId}...`);
-                const metaData = await this.getMetaData(postId);
+                // Get S3 object and its LastModified date
+                const key = `${config.MetaDataPrefix}${postId}`;
+                const params = {
+                    Bucket: config.MetaDataBucket,
+                    Key: key
+                };
+                const command = new GetObjectCommand(params);
+                const response = await this.s3Client.send(command);
+                const data = await response.Body.transformToString();
+                const metaData = JSON.parse(data) as MetaData;
+                // Use published date from metaData if available, else fallback to S3 LastModified
+                let objectDate: Date | null = null;
+                if (metaData.published_date) {
+                    objectDate = new Date(metaData.published_date);
+                } else if (response.LastModified) {
+                    objectDate = new Date(response.LastModified);
+                }
+                if (objectDate) {
+                    const now = new Date();
+                    const diffMs = now.getTime() - objectDate.getTime();
+                    const diffMinutes = diffMs / (1000 * 60);
+                    if (diffMinutes > 15) {
+                        throw new Error(`Meta-data is stale (older than 15 minutes). Last update: ${objectDate.toISOString()}`);
+                    }
+                }
                 return metaData;
             } catch (error) {
                 retries++;
                 if (retries >= maxRetries) {
-                    throw new Error(`Failed to get meta-data after ${maxRetries} retries`);
+                    throw new Error(`Failed to get meta-data after ${maxRetries} retries: ${error instanceof Error ? error.message : error}`);
                 }
-                // Wait for retryDelay milliseconds before trying again
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
         }

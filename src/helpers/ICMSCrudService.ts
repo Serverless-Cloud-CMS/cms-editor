@@ -16,6 +16,7 @@ export interface MetaData {
         key: string;
     };
     published?: boolean;
+    published_date?: string;
     source?: {
         key: string;
     };

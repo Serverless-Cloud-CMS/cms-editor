@@ -76,6 +76,7 @@ interface SavedPostData {
   published_data?: {
     id: string;
     key: string;
+    published_date: string;
   };
   srcVersion?: string;
   key?: string;
@@ -585,11 +586,13 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             media: mediaItems,
             published_data: {
                 id: publishedId,
-                key: publishedKey
+                key: publishedKey,
+                published_date: new Date().toISOString()
             },
             srcVersion: lastSavedPost.srcVersion || `v${Date.now()}`, // Use existing srcVersion or generate a placeholder
             key: publishedKey
         };
+
 
         try {
             // Save the post to S3
@@ -609,10 +612,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             const initialPublishedPost = {
                 ...lastSavedPost,
                 published: true,
-                published_data: {
-                    id: publishedId,
-                    key: publishedKey
-                }
+                published_data: jsonExport.published_data,
             };
             setLastSavedPost(initialPublishedPost);
             if (onPostLoaded) onPostLoaded(initialPublishedPost);
@@ -627,15 +627,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 const updatedPost = {
                     ...lastSavedPost,
                     published: true,
-                    published_data: {
-                        id: publishedId,
-                        key: publishedKey
-                    },
+                    published_data: jsonExport.published_data,
                     preview: metaData.preview,
                     released: metaData.released,
                     release: metaData.release,
                     preview_event: metaData.preview_event,
-                    published_event: metaData.published_event
+                    published_event: metaData.published_event,
                 };
 
                 // Update the lastSavedPost with the meta-data
