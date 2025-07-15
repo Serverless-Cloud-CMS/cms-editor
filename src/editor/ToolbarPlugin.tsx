@@ -580,7 +580,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             // Extract the key from the src URL if it's a media URL
             let key = src;
             if (src.includes(config.MediaProxy)) {
-                key = src.replace(`${config.MediaProxy}/`, '');
+                key = src.replace(`${config.MediaProxy}`, '');
+                console.log("Replacing Media Key with New key = "+key);
             }
 
             // Create a media object for each image
