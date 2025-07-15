@@ -255,7 +255,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
                 Entries: [
                     {
                         Source: config.ReleaseEventSource,
-                        DetailType: config.ReleaseType,
+                        DetailType: 'content-changes',
                         Detail: JSON.stringify(eventDetail),
                         EventBusName: config.ReleaseEventBusName
                     }

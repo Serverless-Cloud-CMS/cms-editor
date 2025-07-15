@@ -1,11 +1,19 @@
 export interface ReleaseEventDetail {
-    post_id: string;
-    post_key: string;
-    post_srcVersion: string;
-    post_srcKey: string;
-    post_uri: string;
-    post_state: string;
-    source: string;
+    transform: {
+        status:string,
+        event: string,
+        post: {
+            key?: string,
+            metadata: {
+                key?: string
+            },
+            bucket: string,
+            preview_url?:string
+            title?: string,
+            name: string
+        }
+    },
+    source : string
 }
 
 export interface MetaData {
@@ -28,8 +36,6 @@ export interface MetaData {
         catalogEntryUri: string;
         source: string;
     };
-    preview_event?: ReleaseEventDetail;
-    published_event?: ReleaseEventDetail;
 }
 
 export interface ICMSCrudService {

@@ -22,7 +22,7 @@ import { TextNode } from 'lexical';
 import './Editor.css';
 import { $createImageNode } from './ImageNode';
 import { config } from '../config';
-import {ICMSCrudService} from "../helpers/ICMSCrudService";
+import {ICMSCrudService, MetaData} from "../helpers/ICMSCrudService";
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 import { $createCodeNode } from '@lexical/code';
 import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider, Link, Typography } from '@mui/material';
@@ -469,20 +469,45 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             }
         }
 
+        // Get Meta data
+        let metaData: MetaData | null = null;
+        try {
+            metaData = await dataService.getMetaData(lastSavedPost.id || '');
+            if (!metaData) {
+                window.alert('Failed to retrieve meta-data for the post.');
+                return;
+            }
+        } catch (e: any) {
+            window.alert('Failed to retrieve meta-data: ' + (e && e.message ? e.message : e));
+            return;
+        }
+
         try {
             // Create the release event detail
-            const eventDetail = {
-                post_id: lastSavedPost.id || '',
-                post_key: lastSavedPost.published_data?.key || '',
-                post_srcVersion: lastSavedPost.srcVersion || '',
-                post_srcKey: lastSavedPost.src || '',
-                post_uri: lastSavedPost.preview?.catalogEntryUri || `${config.PreviewURL}/${lastSavedPost.id}`,
-                post_state: 'preview',
-                source: config.ReleaseEventSource
-            };
+
+
+            // Send Event to Release Post
+            const message = {
+
+                transform: {
+                    status: "Content Release Request",
+                    event: "content-ready-for-release",
+                    post: {
+                        key: metaData.source?.key,
+                        metadata: {
+                            key: lastSavedPost.id
+                        },
+                        bucket: "",
+                        preview_url: metaData.preview?.catalogEntryUri,
+                        title: lastSavedPost.title,
+                        name:  "content-ready-for-release"
+                    }
+                },
+                source : config.ReleaseEventSource
+            }
 
             // Send the release event
-            await dataService.sendReleaseEvent(eventDetail);
+            await dataService.sendReleaseEvent(message);
             window.alert('Release event sent to Event Bus');
 
             // Poll for updated meta-data
@@ -496,9 +521,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                     ...lastSavedPost,
                     released: true,
                     preview: metaData.preview,
-                    release: metaData.release,
-                    preview_event: metaData.preview_event,
-                    published_event: metaData.published_event
+                    release: metaData.release
                 };
 
                 // Update the lastSavedPost with the meta-data
@@ -630,9 +653,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                     published_data: jsonExport.published_data,
                     preview: metaData.preview,
                     released: metaData.released,
-                    release: metaData.release,
-                    preview_event: metaData.preview_event,
-                    published_event: metaData.published_event,
+                    release: metaData.release
                 };
 
                 // Update the lastSavedPost with the meta-data
