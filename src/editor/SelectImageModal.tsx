@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { config } from '../config';
 import { ICMSCrudService } from "../helpers/ICMSCrudService";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItemButton, ListItemText, CircularProgress, Box, TextField } from '@mui/material';
+import {Utils} from "../helpers/Utils";
 
 interface SelectImageModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
   // Set width/height to actual image size when an image is selected
   useEffect(() => {
     if (selectedKey) {
-      const url = `${config.MediaProxy}/${selectedKey}`;
+      const url = Utils.cleanURL(config.MediaProxy,selectedKey);
       const img = new window.Image();
       img.onload = () => {
         setWidth(img.naturalWidth);
@@ -60,7 +61,7 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
             <ListItemButton selected={selectedKey === key} onClick={() => setSelectedKey(key)} key={key}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <img
-                  src={`${config.MediaProxy}/${key}`}
+                  src={Utils.cleanURL(config.MediaProxy,key)}
                   alt={key}
                   style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, background: '#eee' }}
                 />
@@ -76,7 +77,7 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={() => selectedKey && onSelect(`${config.MediaProxy}/${selectedKey}`, selectedKey, width, height)} disabled={!selectedKey} variant="contained">Select</Button>
+        <Button onClick={() => selectedKey && onSelect(`${Utils.cleanURL(config.MediaProxy, selectedKey)}`, selectedKey, width, height)} disabled={!selectedKey} variant="contained">Select</Button>
       </DialogActions>
     </Dialog>
   );

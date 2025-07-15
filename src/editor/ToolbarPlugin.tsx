@@ -47,6 +47,7 @@ import { $createParagraphNode } from 'lexical';
 import SavePostModal from './SavePostModal';
 import GenerateImageModal from './GenerateImageModal';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import {Utils} from "../helpers/Utils";
 
 // Define type for saved post data
 interface SavedPostData {
@@ -255,6 +256,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
       });
     };
 
+
     // Image upload/select/link handlers
     const handleUploadImage = async () => {
         const input = document.createElement('input');
@@ -267,7 +269,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             const data = new Uint8Array(arrayBuffer);
             const key = `${config.MediaPrefix}${Date.now()}_${file.name}`;
             await dataService.createMedia(config.StageBucket, key, data, file.type);
-            const url = `${config.MediaProxy}/${key}`;
+
+            const url = Utils.cleanURL(config.MediaProxy,key);
             editor.update(() => {
                 const selection = $getSelection();
                 if (!$isRangeSelection(selection)) return;

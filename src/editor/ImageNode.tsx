@@ -171,6 +171,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     img.style.maxWidth = '100%';
     return { element: img };
   }
+
 }
 
 export function $createImageNode(payload: ImagePayload): ImageNode {
