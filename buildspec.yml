@@ -31,6 +31,7 @@ phases:
       - echo VITE_METADATAPREFIX="${METADATA_PREFIX}" >> .env
       - echo VITE_PREVIEWBUCKET="${PREVIEW_BUCKET}" >> .env
       - echo VITE_PREVIEWURL="${PREVIEW_URL}" >> .env
+      - echo VITE_CATALOGEVENTSOURCE="${CATALOG_EVENT_SOURCE}" >> .env
       - CI=True npm test
       - npm run build
       - echo Build completed on `date`

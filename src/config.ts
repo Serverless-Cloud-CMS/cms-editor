@@ -29,6 +29,9 @@ export interface Config {
     MediaConfig: Record<string, string>;
     Region: string;
     AuthConfig: AuthConfig;
+    CatalogPrefix: string;
+    CatalogImagePrefix: string;
+    CatalogEventSource: string;
 }
 
 
@@ -50,6 +53,9 @@ export const config: Config = {
     ReleaseEventSource: import.meta.env.VITE_RELEASEEVENTSOURCE || "content.published",
     PreviewURL: import.meta.env.VITE_PREVIEWURL,
     ReleaseURL: import.meta.env.VITE_RELEASEURL,
+    CatalogPrefix: import.meta.env.VITE_CATALOGPREFIX || "data/catalog/",
+    CatalogImagePrefix: import.meta.env.VITE_CATALOGIMAGEPREFIX || "data/catalog/images/",
+    CatalogEventSource: import.meta.env.VITE_CATALOGEVENTSOURCE || "catalog.published",
     AuthConfig: {
         ClientId: import.meta.env.VITE_CLIENTID,
         IdentityPoolId: import.meta.env.VITE_IDENTITYPOOLID,

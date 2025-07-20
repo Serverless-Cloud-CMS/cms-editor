@@ -1,3 +1,5 @@
+import { CatalogEntry, CatalogPublishEventDetail } from './CatalogEntry';
+
 export interface ReleaseEventDetail {
     transform: {
         status:string,
@@ -55,4 +57,12 @@ export interface ICMSCrudService {
     getMetaData(postId: string): Promise<MetaData>;
     sendReleaseEvent(eventDetail: ReleaseEventDetail): Promise<void>;
     pollForMetaData(postId: string, maxRetries?: number, retryDelay?: number): Promise<MetaData>;
+    
+    // Catalog operations for Version 5
+    createCatalog(catalog: CatalogEntry): Promise<void>;
+    updateCatalog(catalog: CatalogEntry): Promise<void>;
+    getCatalog(catalogId: string): Promise<CatalogEntry>;
+    listCatalogs(): Promise<CatalogEntry[]>;
+    publishCatalog(catalog: CatalogEntry): Promise<void>;
+    sendCatalogPublishEvent(eventDetail: CatalogPublishEventDetail): Promise<void>;
 }

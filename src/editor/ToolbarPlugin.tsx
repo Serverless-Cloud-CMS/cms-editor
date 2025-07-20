@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import CatalogSelectModal from '../components/CatalogSelectModal';
 import {
     $getTableCellNodeFromLexicalNode,
     $insertTableRowAtSelection,
@@ -109,6 +110,9 @@ interface SavedPostData {
     post_state: string;
     source: string;
   };
+  // New fields for version 5
+  catalog_id?: string;
+  catalog_title?: string;
 }
 
 
@@ -132,6 +136,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const [lastSavedPost, setLastSavedPost] = useState<SavedPostData | null>(null);
     const [generateModalOpen, setGenerateModalOpen] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [catalogSelectModalOpen, setCatalogSelectModalOpen] = useState(false);
+    const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
+    const [selectedCatalogTitle, setSelectedCatalogTitle] = useState<string | null>(null);
 
     // Handler for generating image with Bedrock
     const handleGenerateImage = async (prompt: string, size: string) => {
@@ -333,6 +340,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             if (onPostLoaded) onPostLoaded(postData);
             editor.setEditorState(editor.parseEditorState(JSON.stringify(postData.content)));
             setLastSavedPost(postData);
+            setSelectedCatalogId(postData.catalog_id || '');
+            setSelectedCatalogTitle(postData.catalog_title || '');
             window.alert('Post loaded!');
         } catch (e) {
             window.alert('Failed to load post.');
@@ -420,7 +429,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             id,
             template: 'basic',
             title: meta.title,
-            category: 'general',
+            category: selectedCatalogId || 'general',
             published: false,
             postInfo: {
                 author: meta.author,
@@ -430,7 +439,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             content,
             media: mediaItems,
             postKey,
-            src: key
+            src: key,
+            catalog_id: selectedCatalogId || undefined,
+            catalog_title: selectedCatalogTitle || undefined,
         };
 
         await dataService.create(config.StageBucket, key, postData);
@@ -460,6 +471,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const handleReleasePost = async () => {
         if (!lastSavedPost || !lastSavedPost.published) {
             window.alert('Please publish your post first before releasing it.');
+            return;
+        }
+        
+        if (!lastSavedPost.catalog_id) {
+            window.alert('Please select a catalog and publish your post before releasing it.');
+            setCatalogSelectModalOpen(true);
             return;
         }
 
@@ -503,10 +520,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                         bucket: "",
                         preview_url: metaData.preview?.catalogEntryUri,
                         title: lastSavedPost.title,
-                        name:  "content-ready-for-release"
+                        name: "content-ready-for-release",
+                        catalog_id: lastSavedPost.catalog_id
                     }
                 },
-                source : config.ReleaseEventSource
+                source: config.ReleaseEventSource
             }
 
             // Send the release event
@@ -524,7 +542,10 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                     ...lastSavedPost,
                     released: true,
                     preview: metaData.preview,
-                    release: metaData.release
+                    release: metaData.release,
+                    // Ensure catalog information is preserved
+                    catalog_id: lastSavedPost.catalog_id,
+                    catalog_title: lastSavedPost.catalog_title
                 };
 
                 // Update the lastSavedPost with the meta-data
@@ -549,6 +570,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const handlePublishAsJson = async () => {
         if (!lastSavedPost || !lastSavedPost.meta || !lastSavedPost.meta.title || !lastSavedPost.meta.author) {
             window.alert('Please save your post first to set the title, author, and date.');
+            return;
+        }
+        
+        if (!selectedCatalogId || !selectedCatalogTitle) {
+            window.alert('Please select a catalog before publishing.');
+            setCatalogSelectModalOpen(true);
             return;
         }
 
@@ -584,6 +611,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 console.log("Replacing Media Key with New key = "+key);
             }
 
+            //Check if key has one or more forward slashes in front, and remove.
+            key = key.replace(/^\//, '');
+            if (key.startsWith('/')) {
+                key = key.substring(1);
+            }
+
             // Create a media object for each image
             mediaItems.push({
                 name: alt || `Image ${index + 1}`,
@@ -610,6 +643,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 type: 'html',
                 body: htmlString
             },
+            category: selectedCatalogId,
             media: mediaItems,
             published_data: {
                 id: publishedId,
@@ -617,7 +651,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 published_date: new Date().toISOString()
             },
             srcVersion: lastSavedPost.srcVersion || `v${Date.now()}`, // Use existing srcVersion or generate a placeholder
-            key: publishedKey
+            key: publishedKey,
+            catalog_id: selectedCatalogId,
+            catalog_title: selectedCatalogTitle
         };
 
 
@@ -640,6 +676,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 ...lastSavedPost,
                 published: true,
                 published_data: jsonExport.published_data,
+                catalog_id: selectedCatalogId,
+                catalog_title: selectedCatalogTitle,
             };
             setLastSavedPost(initialPublishedPost);
             if (onPostLoaded) onPostLoaded(initialPublishedPost);
@@ -657,7 +695,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                     published_data: jsonExport.published_data,
                     preview: metaData.preview,
                     released: metaData.released,
-                    release: metaData.release
+                    release: metaData.release,
+                    catalog_id: selectedCatalogId,
+                    catalog_title: selectedCatalogTitle
                 };
 
                 // Update the lastSavedPost with the meta-data
@@ -934,13 +974,28 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />Delete Column
           </MenuItem>
         </Menu>
+        {/* Catalog Selection Button */}
+        <Tooltip title="Select Catalog for Publishing">
+          <span>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setCatalogSelectModalOpen(true)}
+              disabled={!lastSavedPost}
+              sx={{ mr: 1 }}
+            >
+              {selectedCatalogTitle ? `Catalog: ${selectedCatalogTitle}` : "Select Catalog"}
+            </Button>
+          </span>
+        </Tooltip>
+
         {/* Publish as JSON Button */}
         <Tooltip title={lastSavedPost ? "Publish as HTML" : "Save post first to enable publishing"}>
           <span>
             <IconButton 
               onClick={handlePublishAsJson} 
               size="small" 
-              disabled={!lastSavedPost || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
+              disabled={!lastSavedPost || !selectedCatalogId || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
               color={lastSavedPost?.published ? "success" : lastSavedPost ? "primary" : "default"}
             >
               <PublishIcon />
@@ -949,12 +1004,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         </Tooltip>
 
         {/* Release Post Button */}
-        <Tooltip title={lastSavedPost?.published ? "Release Post" : "Publish post first to enable releasing"}>
+        <Tooltip title={lastSavedPost?.published ? (lastSavedPost?.catalog_id ? "Release Post" : "Select a catalog first") : "Publish post first to enable releasing"}>
           <span>
             <IconButton 
               onClick={handleReleasePost} 
               size="small" 
-              disabled={!lastSavedPost?.published || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
+              disabled={!lastSavedPost?.published || !lastSavedPost?.catalog_id || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
               color={lastSavedPost?.released ? "success" : "primary"}
             >
               <SendIcon />
@@ -981,6 +1036,16 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                   onSave={handleSaveModalSave}
                   initialTitle={lastSavedPost?.meta?.title || ''}
                   initialAuthor={lastSavedPost?.meta?.author || ''}
+                />
+        <CatalogSelectModal
+                  open={catalogSelectModalOpen}
+                  onClose={() => setCatalogSelectModalOpen(false)}
+                  onSelect={(catalogId, catalogTitle) => {
+                    setSelectedCatalogId(catalogId);
+                    setSelectedCatalogTitle(catalogTitle);
+                    setCatalogSelectModalOpen(false);
+                  }}
+                  dataService={dataService}
                 />
       </Box>
     );

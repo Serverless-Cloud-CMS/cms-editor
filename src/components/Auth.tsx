@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { CircularProgress, AppBar, Drawer, MenuItem, Toolbar, IconButton, Menu } from "@mui/material";
+import { CircularProgress, AppBar, Drawer, MenuItem, Toolbar, IconButton, Menu, Tabs, Tab, Box } from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
+import EditIcon from '@mui/icons-material/Edit';
+import CategoryIcon from '@mui/icons-material/Category';
 import styled from "@mui/material/styles/styled";
 import { config } from "../config";
 import { useAuth } from "react-oidc-context";
 import DataService from "../helpers/DataService";
 import Editor from "../editor/Editor";
+import CatalogManager from "./CatalogManager";
 
 // Styled components
 const Root = styled('div')({ flexGrow: 1 });
@@ -38,6 +41,7 @@ const Auth: React.FC<AuthProps> = ({ auth: { token, user } }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [username, setUsername] = useState("");
     const [jwt, setJwt] = useState("");
+    const [activeTab, setActiveTab] = useState(0);
 
     const authClient = useAuth();
 
@@ -103,16 +107,33 @@ const Auth: React.FC<AuthProps> = ({ auth: { token, user } }) => {
 
     if (!isAuthenticated) return <CircularProgress size={50} />;
 
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setActiveTab(newValue);
+    };
+
     return (
         <Root>
             <AppBar position="fixed">
-                <Toolbar>
-                    Serverless CMS Editor
+                <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Box>Serverless CMS Editor</Box>
+                    <Tabs 
+                        value={activeTab} 
+                        onChange={handleTabChange} 
+                        textColor="inherit"
+                        indicatorColor="secondary"
+                    >
+                        <Tab icon={<EditIcon />} label="Editor" />
+                        <Tab icon={<CategoryIcon />} label="Catalogs" />
+                    </Tabs>
                 </Toolbar>
             </AppBar>
             <Content>
                 <ToolBarMix />
-                <Editor dataService={dataSvc.getService()}/>
+                {activeTab === 0 ? (
+                    <Editor dataService={dataSvc.getService()} />
+                ) : (
+                    <CatalogManager dataService={dataSvc.getService()} />
+                )}
                 {loaded && <CircularProgress size={50} />}
             </Content>
         </Root>
