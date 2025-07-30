@@ -24,6 +24,8 @@ import { Box, Paper, Typography, Link } from '@mui/material';
 import { CodeNode, CodeHighlightNode} from '@lexical/code';
 import 'prismjs/themes/prism.css';
 import CodeHighlightPlugin from "./CodeHighlightPlugin";
+import {config} from "../config";
+import {Utils} from "../helpers/Utils";
 
 
 const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => {
@@ -138,7 +140,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                             </Typography>
                             {loadedPost.preview?.catalogEntryUri && (
                                 <Link 
-                                    href={loadedPost.preview.catalogEntryUri} 
+                                    href={Utils.cleanURL(config.PreviewURL, loadedPost.preview.catalogEntryUri)}
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     variant="caption"

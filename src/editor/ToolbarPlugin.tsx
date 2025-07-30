@@ -984,7 +984,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
               disabled={!lastSavedPost}
               sx={{ mr: 1 }}
             >
-              {selectedCatalogTitle ? `Catalog: ${selectedCatalogTitle}` : "Select Catalog"}
+              {selectedCatalogTitle ? `${selectedCatalogTitle}` : "Select Catalog"}
             </Button>
           </span>
         </Tooltip>
