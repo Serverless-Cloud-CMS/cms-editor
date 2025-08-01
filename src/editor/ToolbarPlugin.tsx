@@ -337,6 +337,72 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const handleSelectPost = async (key: string) => {
         try {
             const postData = await dataService.read(config.StageBucket, key) as SavedPostData;
+            let requireSave = false;
+            let imageOps: any[] = [];
+            // Check for post is published, if so - load latest meta data
+            console.log('postData', postData);
+            if (postData.published && postData.published_data) {
+                // Fetch the latest meta-data
+                const metaData = await dataService.getMetaData(postData.id || '');
+                console.log('metaData', metaData);
+                if (metaData) {
+                    postData.preview = metaData.preview;
+                    postData.release = metaData.release;
+                    postData.released = metaData.released;
+                    console.log('Here ...');
+                    if (metaData.ai_image_generated && metaData.ai_image_generated_details) {
+                        // Loop through the ai_image_generated_details and copy images to the editor stage media if not already in the media object
+                        console.log('Here in ai ...');
+                        const imageDetail = metaData.ai_image_generated_details;
+                        // Ensure postData.media is initialized
+                        if (!postData.media) {
+                            postData.media = [];
+                        }
+                        const existingImage = postData.media.find(mediaItem => mediaItem.key === imageDetail.origSrc);
+                        if (!existingImage) {
+                            console.log('Here in ai ...2');
+                            imageOps.push(dataService.copyObject(config.PublishBucket, imageDetail.origSrc, config.StageBucket, imageDetail.origSrc));
+                            postData.media.push({
+                                name: imageDetail.title,
+                                description: imageDetail.description,
+                                type: imageDetail.type,
+                                order: postData.media.length + 1,
+                                tags: [],
+                                key: imageDetail.origSrc
+                            });
+                            requireSave = true;
+                        }
+                        // metaData.ai_image_generated_details.forEach((imageDetail) => {
+                        //     // Check if the image is already in the media
+                        //     if (!postData.media) {
+                        //         postData.media = [];
+                        //     }
+                        //     console.log('Here in ai ...2');
+                        //     const existingImage = postData.media.find(mediaItem => mediaItem.key === imageDetail.origSrc);
+                        //     if (!existingImage) {
+                        //         console.log('Here in ai ...3');
+                        //         imageOps.push(dataService.copyObject(config.PublishBucket, imageDetail.origSrc, config.StageBucket, imageDetail.origSrc));
+                        //         postData.media.push({
+                        //             name: imageDetail.title,
+                        //             description: imageDetail.description,
+                        //             type: imageDetail.type,
+                        //             order: postData.media.length + 1,
+                        //             tags: [],
+                        //             key: imageDetail.origSrc
+                        //         });
+                        //         requireSave = true;
+                        //     }
+                        // });
+
+                    }
+                }
+            }
+            if (requireSave) {
+                // Save the post with updated media
+                await Promise.all(imageOps);
+                await dataService.update(config.StageBucket, key, postData);
+                window.alert('Post media updated with AI generated images.');
+            }
             if (onPostLoaded) onPostLoaded(postData);
             editor.setEditorState(editor.parseEditorState(JSON.stringify(postData.content)));
             setLastSavedPost(postData);
@@ -345,6 +411,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             window.alert('Post loaded!');
         } catch (e) {
             window.alert('Failed to load post.');
+            console.log('Failed to load post.',e);
         }
     };
 

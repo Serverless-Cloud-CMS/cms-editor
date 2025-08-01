@@ -18,6 +18,15 @@ export interface ReleaseEventDetail {
     source : string
 }
 
+export interface AiImageGeneratedDetails {
+    src: string;
+    title: string;
+    description: string;
+    type: string;
+    origSrc: string;
+    pubSrc: string;
+}
+
 export interface MetaData {
     postKey: string;
     src: string;
@@ -25,6 +34,8 @@ export interface MetaData {
         id: string;
         key: string;
     };
+    ai_image_generated?: boolean;
+    ai_image_generated_details?: AiImageGeneratedDetails;
     published?: boolean;
     published_date?: string;
     source?: {

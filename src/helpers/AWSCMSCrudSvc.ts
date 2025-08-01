@@ -277,7 +277,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      * @param retryDelay The delay between retries in milliseconds (default: 5000)
      * @returns The meta-data for the post
      */
-    async pollForMetaData(postId: string, maxRetries: number = 12, retryDelay: number = 5000): Promise<MetaData> {
+    async pollForMetaData(postId: string, maxRetries: number = 12, retryDelay: number = 10000): Promise<MetaData> {
         let retries = 0;
         while (retries < maxRetries) {
             try {

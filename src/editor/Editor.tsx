@@ -20,7 +20,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { Box, Paper, Typography, Link } from '@mui/material';
+import {Box, Paper, Typography, Link, Avatar} from '@mui/material';
 import { CodeNode, CodeHighlightNode} from '@lexical/code';
 import 'prismjs/themes/prism.css';
 import CodeHighlightPlugin from "./CodeHighlightPlugin";
@@ -40,7 +40,8 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         released?: boolean,
         preview?: {
             catalogEntryUri: string;
-        }
+        },
+        media?: { key: string; }[]
     }>({});
 
     // Track polling status
@@ -121,40 +122,49 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     }, [editorRef]);
 
     return (
-        <Box sx={{ width: '100%', maxWidth: 1000, mx: 'auto', my: 2 }}>
+        <Box sx={{ width: '100%', maxWidth: 1500, mx: 'auto', my: 2 }}>
             <Paper elevation={2} sx={{ p: 2, position: 'relative', height: '80vh', display: 'flex', flexDirection: 'column' }}>
                 {/* Post Meta-Data Display */}
-                {(loadedPost.meta?.title || loadedPost.meta?.author) && (
-                    <div style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
-                        {loadedPost.meta?.title && <div style={{ fontSize: 22, fontWeight: 600 }}>{loadedPost.meta.title}</div>}
-                        {loadedPost.meta?.author && <div style={{ fontSize: 15, color: '#555' }}>By {loadedPost.meta.author}</div>}
-                        {loadedPost.meta?.dateSaved && <div style={{ fontSize: 12, color: '#888' }}>{loadedPost.meta.dateSaved}</div>}
-
-                        {/* Publication and Release Status */}
-                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, mt: 1 }}>
-                            <Typography variant="caption" color={loadedPost.published ? "success.main" : "text.secondary"}>
-                                {loadedPost.published ? "Published ✓" : "Not Published"}
-                            </Typography>
-                            <Typography variant="caption" color={loadedPost.released ? "success.main" : "text.secondary"}>
-                                {loadedPost.released ? "Released ✓" : "Not Released"}
-                            </Typography>
-                            {loadedPost.preview?.catalogEntryUri && (
-                                <Link 
-                                    href={Utils.cleanURL(config.PreviewURL, loadedPost.preview.catalogEntryUri)}
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    variant="caption"
-                                >
-                                    Preview Link
-                                </Link>
-                            )}
-                            {isPolling && (
-                                <Typography variant="caption" color="info.main">
-                                    Polling for meta-data...
+                {(loadedPost.meta?.title || loadedPost.meta?.author ) && (
+                    <Box style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8, display: 'flex', alignItems: 'flex-start' }}>
+                        {(loadedPost.media && loadedPost.media.length > 0) && (
+                        <Avatar
+                            src={Utils.cleanURL(config.MediaProxy,loadedPost.media[0]?.key || '')}
+                            alt={loadedPost.media[0]?.key || ''}
+                            sx={{ width: 64, height: 64, mr: 2 }}
+                            variant="rounded"
+                        />
+                        )}
+                        <Box sx={{ flex: 1 }}>
+                            {loadedPost.meta?.title && <div style={{ fontSize: 22, fontWeight: 600 }}>{loadedPost.meta.title}</div>}
+                            {loadedPost.meta?.author && <div style={{ fontSize: 15, color: '#555' }}>By {loadedPost.meta.author}</div>}
+                            {loadedPost.meta?.dateSaved && <div style={{ fontSize: 12, color: '#888' }}>{loadedPost.meta.dateSaved}</div>}
+                            {/* Publication and Release Status */}
+                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, mt: 1 }}>
+                                <Typography variant="caption" color={loadedPost.published ? "success.main" : "text.secondary"}>
+                                    {loadedPost.published ? "Published ✓" : "Not Published"}
                                 </Typography>
-                            )}
+                                <Typography variant="caption" color={loadedPost.released ? "success.main" : "text.secondary"}>
+                                    {loadedPost.released ? "Released ✓" : "Not Released"}
+                                </Typography>
+                                {loadedPost.preview?.catalogEntryUri && (
+                                    <Link
+                                        href={Utils.cleanURL(config.PreviewURL, loadedPost.preview.catalogEntryUri)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        variant="caption"
+                                    >
+                                        Preview Link
+                                    </Link>
+                                )}
+                                {isPolling && (
+                                    <Typography variant="caption" color="info.main">
+                                        Polling for meta-data...
+                                    </Typography>
+                                )}
+                            </Box>
                         </Box>
-                    </div>
+                    </Box>
                 )}
                 <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                     <LexicalComposer initialConfig={initialConfig}>
