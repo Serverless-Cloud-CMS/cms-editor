@@ -24,6 +24,8 @@ import {Box, Paper, Typography, Link, Avatar} from '@mui/material';
 import { CodeNode, CodeHighlightNode} from '@lexical/code';
 import 'prismjs/themes/prism.css';
 import CodeHighlightPlugin from "./CodeHighlightPlugin";
+import { LinkNode } from '@lexical/link';
+import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import {config} from "../config";
 import {Utils} from "../helpers/Utils";
 
@@ -90,7 +92,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
             },
 
         },
-        nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode, CodeHighlightNode,CodeNode],
+        nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode, CodeHighlightNode, CodeNode, LinkNode],
     };
 
     const handleChange = (editorState: EditorState) => {
@@ -188,6 +190,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                         <ListPlugin />
                         <TablePlugin />
                         <CodeHighlightPlugin/>
+                        <LinkPlugin />
                         <SelectImageModal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} onSelect={handleSelectImage} dataService={dataService} />
                     </LexicalComposer>
                 </div>

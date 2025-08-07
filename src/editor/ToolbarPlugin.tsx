@@ -16,7 +16,9 @@ import {
     FORMAT_TEXT_COMMAND,
     TextFormatType,
     RangeSelection,
-    ParagraphNode
+    ParagraphNode,
+    $isElementNode,
+    $isTextNode
 } from 'lexical';
 import { HeadingNode, HeadingTagType } from '@lexical/rich-text';
 import { TextNode } from 'lexical';
@@ -46,9 +48,11 @@ import SendIcon from '@mui/icons-material/Send';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { $createParagraphNode } from 'lexical';
 import SavePostModal from './SavePostModal';
+import HyperlinkModal from './HyperlinkModal';
 import GenerateImageModal from './GenerateImageModal';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import {Utils} from "../helpers/Utils";
+import { TOGGLE_LINK_COMMAND, $isLinkNode, $createLinkNode } from '@lexical/link';
 
 // Define type for saved post data
 interface SavedPostData {
@@ -139,6 +143,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const [catalogSelectModalOpen, setCatalogSelectModalOpen] = useState(false);
     const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
     const [selectedCatalogTitle, setSelectedCatalogTitle] = useState<string | null>(null);
+    const [hyperlinkModalOpen, setHyperlinkModalOpen] = useState(false);
+    const [hyperlinkData, setHyperlinkData] = useState<{ url: string; text: string; isEditing: boolean }>({ 
+        url: '', 
+        text: '', 
+        isEditing: false 
+    });
 
     // Handler for generating image with Bedrock
     const handleGenerateImage = async (prompt: string, size: string) => {
@@ -372,27 +382,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                             });
                             requireSave = true;
                         }
-                        // metaData.ai_image_generated_details.forEach((imageDetail) => {
-                        //     // Check if the image is already in the media
-                        //     if (!postData.media) {
-                        //         postData.media = [];
-                        //     }
-                        //     console.log('Here in ai ...2');
-                        //     const existingImage = postData.media.find(mediaItem => mediaItem.key === imageDetail.origSrc);
-                        //     if (!existingImage) {
-                        //         console.log('Here in ai ...3');
-                        //         imageOps.push(dataService.copyObject(config.PublishBucket, imageDetail.origSrc, config.StageBucket, imageDetail.origSrc));
-                        //         postData.media.push({
-                        //             name: imageDetail.title,
-                        //             description: imageDetail.description,
-                        //             type: imageDetail.type,
-                        //             order: postData.media.length + 1,
-                        //             tags: [],
-                        //             key: imageDetail.origSrc
-                        //         });
-                        //         requireSave = true;
-                        //     }
-                        // });
+
 
                     }
                 }
@@ -409,6 +399,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             setSelectedCatalogId(postData.catalog_id || '');
             setSelectedCatalogTitle(postData.catalog_title || '');
             window.alert('Post loaded!');
+            setLoadModalOpen(false);
         } catch (e) {
             window.alert('Failed to load post.');
             console.log('Failed to load post.',e);
@@ -416,17 +407,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     };
 
     const handleSavePost = () => {
-        // If post has been saved previously, use existing title and author
-        if (lastSavedPost && lastSavedPost.meta && lastSavedPost.meta.title && lastSavedPost.meta.author) {
-            // Directly call handleSaveModalSave with existing metadata
-            handleSaveModalSave({
-                title: lastSavedPost.meta.title,
-                author: lastSavedPost.meta.author
-            });
-        } else {
-            // Otherwise, open the save modal
-            setSaveModalOpen(true);
-        }
+        // Always show the save modal, even for previously saved posts
+        // This allows updating the title of previously saved posts
+        setSaveModalOpen(true);
     };
 
     const handleSaveModalClose = () => {
@@ -531,6 +514,81 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
           codeNode.insertAfter(paragraph);
           paragraph.select();
         }
+      });
+    };
+    
+    // Hyperlink handlers
+    const handleOpenHyperlinkModal = () => {
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const nodes = selection.getNodes();
+          let url = '';
+          let text = '';
+          let isEditing = false;
+          
+          // Check if selection contains a link node
+          for (const node of nodes) {
+            if ($isLinkNode(node)) {
+              // We're editing an existing link
+              url = node.getURL();
+              text = node.getTextContent();
+              isEditing = true;
+              break;
+            } else if (node.getParent() && $isLinkNode(node.getParent())) {
+              // Text node inside a link node
+              const parent = node.getParent();
+              if (parent) {
+                url = parent.getURL();
+                text = parent.getTextContent();
+                isEditing = true;
+                break;
+              }
+            }
+          }
+          
+          // If no link found but text is selected, use it as link text
+          if (!isEditing && selection.getTextContent()) {
+            text = selection.getTextContent();
+          }
+          
+          setHyperlinkData({ url, text, isEditing });
+          setHyperlinkModalOpen(true);
+        } else {
+          // No selection, create a new link at cursor position
+          setHyperlinkData({ url: '', text: '', isEditing: false });
+          setHyperlinkModalOpen(true);
+        }
+      });
+    };
+    
+    const handleSaveHyperlink = (linkData: { url: string; text: string }) => {
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          if (hyperlinkData.isEditing) {
+            // Remove the existing link first
+            editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+          }
+          
+          if (selection.isCollapsed()) {
+            // No text selected, insert new text with link
+            const linkNode = $createLinkNode(linkData.url);
+            linkNode.append(new TextNode(linkData.text));
+            selection.insertNodes([linkNode]);
+          } else {
+            // Text selected, apply link to selection
+            editor.dispatchCommand(TOGGLE_LINK_COMMAND, linkData.url);
+          }
+        }
+        setHyperlinkModalOpen(false);
+      });
+    };
+    
+    const handleRemoveHyperlink = () => {
+      editor.update(() => {
+        editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+        setHyperlinkModalOpen(false);
       });
     };
 
@@ -983,6 +1041,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <CodeIcon />
           </IconButton>
         </Tooltip>
+        <Tooltip title="Hyperlink">
+          <IconButton size="small" onClick={handleOpenHyperlinkModal} color="primary">
+            <LinkIcon />
+          </IconButton>
+        </Tooltip>
         {/* Bulleted List */}
         <Tooltip title="Bulleted List">
           <IconButton size="small" onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}>
@@ -1113,6 +1176,15 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                     setCatalogSelectModalOpen(false);
                   }}
                   dataService={dataService}
+                />
+        <HyperlinkModal
+                  open={hyperlinkModalOpen}
+                  onClose={() => setHyperlinkModalOpen(false)}
+                  onSave={handleSaveHyperlink}
+                  onRemove={handleRemoveHyperlink}
+                  initialUrl={hyperlinkData.url}
+                  initialText={hyperlinkData.text}
+                  isEditing={hyperlinkData.isEditing}
                 />
       </Box>
     );
