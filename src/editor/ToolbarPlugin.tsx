@@ -52,7 +52,7 @@ import HyperlinkModal from './HyperlinkModal';
 import GenerateImageModal from './GenerateImageModal';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import {Utils} from "../helpers/Utils";
-import { TOGGLE_LINK_COMMAND, $isLinkNode, $createLinkNode } from '@lexical/link';
+import {TOGGLE_LINK_COMMAND, $isLinkNode, $createLinkNode, LinkNode} from '@lexical/link';
 
 // Define type for saved post data
 interface SavedPostData {
@@ -430,7 +430,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
         // Use existing ID if available, otherwise generate a new one
         const id = lastSavedPost?.id || uuidv4();
-        const postKey = `${id}_${safeTitle}`;
+        const postKey = `${id}`;
         const key = `${config.StagePrefix || ''}${postKey}.json`;
 
         // Generate HTML to parse for images
@@ -454,6 +454,20 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             key: string;
         }> = [];
 
+        const staged_media = lastSavedPost?.media || [];
+        // Iterate over Stage Media and create media objects from Staged Media
+        staged_media.forEach((media) => {
+            mediaItems.push({
+                name: media.name,
+                description: media.description,
+                type: media.type,
+                order: media.order,
+                tags: media.tags,
+                key: media.key
+            });
+        });
+        
+        
         imgElements.forEach((img, index) => {
             const src = img.getAttribute('src') || '';
             const alt = img.getAttribute('alt') || '';
@@ -462,6 +476,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             let key = src;
             if (src.includes(config.MediaProxy)) {
                 key = src.replace(`${config.MediaProxy}/`, '');
+            }
+
+            // Check if Media item is already present based on key
+            const isMediaExist = mediaItems.some(item => item.key === key);
+            if (isMediaExist) {
+                return; // Skip if media item already exists
             }
 
             // Create a media object for each image
@@ -537,7 +557,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
               break;
             } else if (node.getParent() && $isLinkNode(node.getParent())) {
               // Text node inside a link node
-              const parent = node.getParent();
+              const parent = node.getParent() as LinkNode;
               if (parent) {
                 url = parent.getURL();
                 text = parent.getTextContent();
