@@ -117,6 +117,13 @@ interface SavedPostData {
   // New fields for version 5
   catalog_id?: string;
   catalog_title?: string;
+  // New field for version 7
+  thumbnail?: {
+    name: string;
+    description: string;
+    type: string;
+    key: string;
+  };
 }
 
 
@@ -144,6 +151,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
     const [selectedCatalogTitle, setSelectedCatalogTitle] = useState<string | null>(null);
     const [hyperlinkModalOpen, setHyperlinkModalOpen] = useState(false);
+    const [thumbnailSelectModalOpen, setThumbnailSelectModalOpen] = useState(false);
     const [hyperlinkData, setHyperlinkData] = useState<{ url: string; text: string; isEditing: boolean }>({ 
         url: '', 
         text: '', 
@@ -380,10 +388,20 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                                 tags: [],
                                 key: imageDetail.origSrc
                             });
+                            
+                            // Set AI-generated image as thumbnail if no thumbnail exists yet
+                            if (!postData.thumbnail) {
+                                postData.thumbnail = {
+                                    name: imageDetail.title,
+                                    description: imageDetail.description,
+                                    type: imageDetail.type,
+                                    key: imageDetail.origSrc
+                                };
+                                console.log('Using AI-generated image as thumbnail');
+                            }
+                            
                             requireSave = true;
                         }
-
-
                     }
                 }
             }
@@ -495,6 +513,18 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             });
         });
 
+        // Use existing thumbnail or default to first media item if available
+        let thumbnailData = lastSavedPost?.thumbnail;
+        if (!thumbnailData && mediaItems.length > 0) {
+            const firstMedia = mediaItems[0];
+            thumbnailData = {
+                name: firstMedia.name,
+                description: firstMedia.description,
+                type: firstMedia.type,
+                key: firstMedia.key
+            };
+        }
+
         const postData: SavedPostData = {
             id,
             template: 'basic',
@@ -512,6 +542,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             src: key,
             catalog_id: selectedCatalogId || undefined,
             catalog_title: selectedCatalogTitle || undefined,
+            thumbnail: thumbnailData
         };
 
         await dataService.create(config.StageBucket, key, postData);
@@ -610,6 +641,42 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
         setHyperlinkModalOpen(false);
       });
+    };
+
+    // Handler for selecting a thumbnail
+    const handleSelectThumbnail = async (url: string, key: string) => {
+        if (!lastSavedPost) {
+            window.alert('Please save your post first before selecting a thumbnail.');
+            return;
+        }
+
+        try {
+            // Create thumbnail object
+            const thumbnailData = {
+                name: key.split('/').pop() || 'Thumbnail',
+                description: 'Post thumbnail',
+                type: 'image',
+                key: key
+            };
+
+            // Update lastSavedPost with the new thumbnail
+            const updatedPost = {
+                ...lastSavedPost,
+                thumbnail: thumbnailData
+            };
+
+            // Save the updated post
+            await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
+            
+            // Update state
+            setLastSavedPost(updatedPost);
+            if (onPostLoaded) onPostLoaded(updatedPost);
+            
+            window.alert('Thumbnail updated successfully!');
+            setThumbnailSelectModalOpen(false);
+        } catch (e: any) {
+            window.alert('Failed to update thumbnail: ' + (e && e.message ? e.message : e));
+        }
     };
 
     // Handler to release a post
@@ -860,6 +927,150 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         } catch (e: any) {
             window.alert('Failed to publish JSON to S3: ' + (e && e.message ? e.message : e));
         }
+    };
+
+    // Modal for selecting a thumbnail image
+    const ThumbnailSelectModal: React.FC<{
+      isOpen: boolean;
+      onClose: () => void;
+      onSelect: (url: string, key: string) => void;
+      dataService: ICMSCrudService;
+    }> = ({ isOpen, onClose, onSelect, dataService }) => {
+      const [images, setImages] = useState<Array<{ url: string; key: string; name: string }>>([]);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState<string | null>(null);
+      const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+      useEffect(() => {
+        if (!isOpen) return;
+        setLoading(true);
+        setError(null);
+        dataService.listMedia(config.StageBucket, config.MediaPrefix || '')
+          .then(keys => {
+            // Filter for image files
+            const imageKeys = keys.filter(k => 
+              k.endsWith('.jpg') || k.endsWith('.jpeg') || k.endsWith('.png') || k.endsWith('.gif') || k.endsWith('.webp')
+            );
+            
+            // Convert to array of objects with URL and key
+            const imageObjects = imageKeys.map(key => ({
+              url: Utils.cleanURL(config.MediaProxy, key),
+              key,
+              name: key.split('/').pop() || key
+            }));
+            
+            setImages(imageObjects);
+            setLoading(false);
+          })
+          .catch(e => {
+            setError(e.message);
+            setLoading(false);
+          });
+      }, [isOpen]);
+
+      if (!isOpen) return null;
+
+      return (
+        <div className="select-image-modal-backdrop">
+          <div className="select-image-modal">
+            <button className="close-btn" onClick={onClose}>×</button>
+            <h2>Select Thumbnail Image</h2>
+            {loading && <div>Loading images...</div>}
+            {error && <div style={{ color: 'red' }}>{error}</div>}
+            <div className="image-gallery">
+              {images.map(image => (
+                <div key={image.key} className={`image-thumb${selectedKey === image.key ? ' selected' : ''}`} onClick={() => setSelectedKey(image.key)}>
+                  <img src={image.url} alt={image.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ))}
+              {(!loading && images.length === 0 && !error) && <div>No images found.</div>}
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <button
+                disabled={!selectedKey}
+                onClick={() => {
+                  if (selectedKey) {
+                    const selectedImage = images.find(img => img.key === selectedKey);
+                    if (selectedImage) {
+                      onSelect(selectedImage.url, selectedKey);
+                    }
+                  }
+                }}
+                style={{ marginLeft: 10 }}
+              >
+                Set as Thumbnail
+              </button>
+            </div>
+          </div>
+          <style>{`
+            .select-image-modal-backdrop {
+              position: fixed;
+              top: 0; left: 0; right: 0; bottom: 0;
+              background: rgba(0,0,0,0.4);
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .select-image-modal {
+              background: #fff;
+              border-radius: 10px;
+              padding: 2rem 2.5rem 1.5rem 2.5rem;
+              min-width: 600px;
+              max-width: 90vw;
+              max-height: 90vh;
+              overflow-y: auto;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+              position: relative;
+            }
+            .close-btn {
+              position: absolute;
+              top: 1rem;
+              right: 1rem;
+              background: none;
+              border: none;
+              font-size: 2rem;
+              color: #888;
+              cursor: pointer;
+              transition: color 0.2s;
+            }
+            .close-btn:hover {
+              color: #222;
+            }
+            .image-gallery {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+              margin-top: 1.5rem;
+              justify-content: flex-start;
+            }
+            .image-thumb {
+              width: 100px;
+              height: 100px;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              cursor: pointer;
+              border: 2px solid transparent;
+              transition: border 0.2s, box-shadow 0.2s;
+            }
+            .image-thumb.selected {
+              border: 2px solid #0078d4;
+              box-shadow: 0 4px 16px rgba(0,120,212,0.12);
+            }
+            .image-thumb:hover {
+              border: 2px solid #0078d4;
+              box-shadow: 0 4px 16px rgba(0,120,212,0.12);
+            }
+            .select-image-modal h2 {
+              margin-top: 0;
+              font-size: 1.3rem;
+              font-weight: 600;
+              color: #222;
+            }
+          `}</style>
+        </div>
+      );
     };
 
     // Modal for selecting a post to load
@@ -1173,6 +1384,22 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             <AutoAwesomeIcon />
           </IconButton>
         </Tooltip>
+        
+        {/* Thumbnail Selection Button */}
+        <Tooltip title={lastSavedPost ? "Select Post Thumbnail" : "Save post first to select thumbnail"}>
+          <span>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setThumbnailSelectModalOpen(true)}
+              disabled={!lastSavedPost}
+              sx={{ ml: 1 }}
+              startIcon={<InsertPhotoIcon />}
+            >
+              Thumbnail
+            </Button>
+          </span>
+        </Tooltip>
         <GenerateImageModal
           open={generateModalOpen}
           onClose={() => setGenerateModalOpen(false)}
@@ -1205,6 +1432,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                   initialUrl={hyperlinkData.url}
                   initialText={hyperlinkData.text}
                   isEditing={hyperlinkData.isEditing}
+                />
+        <ThumbnailSelectModal
+                  isOpen={thumbnailSelectModalOpen}
+                  onClose={() => setThumbnailSelectModalOpen(false)}
+                  onSelect={handleSelectThumbnail}
+                  dataService={dataService}
                 />
       </Box>
     );

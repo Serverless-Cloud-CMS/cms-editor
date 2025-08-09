@@ -79,6 +79,14 @@ This is a Editor using Lexical and  React as the core frameworks.
 - Use 'trunk-based development' for continuous integration and deployment.
 - Use `git rebase` for keeping branches up to date with the main branch.
 - Use `git merge` for merging branches into the main branch.
+- Use Semantic versioning when making changes.
+- Increment versioning based on the type of change:
+  - Patch: for bug fixes
+  - Minor: for new features
+  - Major: for breaking changes
+- Use a `CHANGELOG.md` file to document changes to the project.
+- Use a `package.json` file to manage project dependencies.
+- Increment the Package.json version number when making changes.
 
 # Deployment
 - Use Vite for building the project.

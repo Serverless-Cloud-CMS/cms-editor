@@ -43,7 +43,13 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         preview?: {
             catalogEntryUri: string;
         },
-        media?: { key: string; }[]
+        media?: { key: string; }[],
+        thumbnail?: {
+            name: string;
+            description: string;
+            type: string;
+            key: string;
+        }
     }>({});
 
     // Track polling status
@@ -129,10 +135,11 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                 {/* Post Meta-Data Display */}
                 {(loadedPost.meta?.title || loadedPost.meta?.author ) && (
                     <Box style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8, display: 'flex', alignItems: 'flex-start' }}>
-                        {(loadedPost.media && loadedPost.media.length > 0) && (
+                        {/* Display thumbnail if available, otherwise use first media item */}
+                        {((loadedPost.thumbnail && loadedPost.thumbnail.key) || (loadedPost.media && loadedPost.media.length > 0)) && (
                         <Avatar
-                            src={Utils.cleanURL(config.MediaProxy,loadedPost.media[0]?.key || '')}
-                            alt={loadedPost.media[0]?.key || ''}
+                            src={Utils.cleanURL(config.MediaProxy, loadedPost.thumbnail?.key || (loadedPost.media && loadedPost.media[0]?.key) || '')}
+                            alt={loadedPost.thumbnail?.name || (loadedPost.media && loadedPost.media[0]?.key) || ''}
                             sx={{ width: 64, height: 64, mr: 2 }}
                             variant="rounded"
                         />

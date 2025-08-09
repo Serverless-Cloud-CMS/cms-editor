@@ -14,6 +14,12 @@ The version 7 is to enhance the Editor with a Post thumbnail.  At this time, oth
 - The thumbnail should be displayed in the Editor UI replacing the Avatar being displayed using the first media item found.
 - The User should be able to select a new thumbnail from the media library.
 
+# Notes
+- Update Package version after changes
+- Update the Editor UI to use the new thumbnail attribute.
+- Write tests for the new thumbnail attribute.
+- Do not worry about image resizing.
+- The image will be resized to fit display dimensions.
 
 
 
