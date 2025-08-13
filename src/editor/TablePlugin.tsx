@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { INSERT_TABLE_COMMAND, $createTableNodeWithDimensions } from '@lexical/table';
 import {$getSelection, $isRangeSelection} from "lexical";
-import { Paper } from '@mui/material';
 import './TablePlugin.css';
 import { $createParagraphNode } from 'lexical';
 

@@ -9,7 +9,7 @@ import { authService } from './helpers/AuthService';
 import SessionTimeoutDialog from './components/SessionTimeoutDialog';
 import { NotificationProvider } from './context/NotificationContext';
 
-const Root = styled('div')(({ theme }) => ({
+const Root = styled('div')(() => ({
     flexGrow: 1,
 }));
 

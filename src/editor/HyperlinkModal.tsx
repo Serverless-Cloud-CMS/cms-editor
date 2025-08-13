@@ -58,7 +58,8 @@ const HyperlinkModal: React.FC<HyperlinkModalProps> = ({
       onSave({ url: finalUrl, text: finalText });
       resetForm();
     } catch (e) {
-      setError('Please enter a valid URL.');
+      setError('Please enter a valid URL.' + (e instanceof Error ? `: ${e.message}` : ''));
+      console.error('Invalid URL:', url, e);
     }
   };
 

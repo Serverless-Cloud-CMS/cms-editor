@@ -206,7 +206,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         // This is a placeholder that simulates an image URL being returned
         // You should implement the call to Bedrock's image generation API here
         // and return the URL or a presigned S3 URL to the generated image
-        throw new Error('generateImageWithBedrock is not implemented.');
+        throw new Error('generateImageWithBedrock is not implemented.' + prompt + size);
     }
 
     async uploadImageBlob(bucket: string, key: string, blob: Blob): Promise<void> {
@@ -219,7 +219,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
                 Body: uint8Array,
                 ContentType: blob.type || 'image/png',
             };
-            const res = await this.s3Client.send(new PutObjectCommand(params));
+            await this.s3Client.send(new PutObjectCommand(params));
         } catch (error) {
             const err = error as Error;
             throw new Error(`Failed to upload image blob: ${err.message}`);

@@ -3,7 +3,6 @@ import { CircularProgress, AppBar, Toolbar, Tabs, Tab, Box } from "@mui/material
 import EditIcon from '@mui/icons-material/Edit';
 import CategoryIcon from '@mui/icons-material/Category';
 import styled from "@mui/material/styles/styled";
-import { useAuth } from "react-oidc-context";
 import DataService from "../helpers/DataService";
 import Editor from "../editor/Editor";
 import CatalogManager from "./CatalogManager";
@@ -31,7 +30,6 @@ const Auth: React.FC<AuthProps> = ({ auth: { token, user } }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
 
-    const authClient = useAuth();
 
     // Initialize service on component mount
     useEffect(() => {
