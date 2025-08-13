@@ -41,33 +41,38 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Create stub .local file
+        run: echo "export AWS_REGION=us-west-2" > .local && echo "export AWS_DEFAULT_REGION=us-west-2" >> .local && echo "export TF_VAR_region=us-west-2" >> .local
+
       - name: Build Docker image
         run: docker build -t cms-editor-test -f docker/Dockerfile .
 
       - name: Run npm install in Docker
-        run: docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm install
+        run: docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm install
 
       - name: Run npm audit in Docker (fail on critical)
         run: |
-          docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm audit --audit-level=critical
+          docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm audit --audit-level=critical
 
       - name: Run tests in Docker
-        run: docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm test
+        run: docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm test
 
-      - name: Build app in Docker
-        run: docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm run build
+      - name: Build src in Docker
+        run: docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm run build
 
-#      - name: Start app in Docker
-#        run: docker run -d --name cms-editor-app -p 5173:5173 -v ${{ github.workspace }}:/app -w /app cms-editor-test npm run preview
+
+
+#      - name: Start src in Docker
+#        run: docker run -d --name cms-editor-src -p 5173:5173 -v ${{ github.workspace }}:/src -w /src cms-editor-test npm run preview
 #
 #      - name: Install Puppeteer
 #        run: npm install puppeteer
 #
-#      - name: Wait for app to start
+#      - name: Wait for src to start
 #        run: sleep 10
 #
 #      - name: Check login page with Puppeteer
 #        run: node scripts/check-login.js
 #
-#      - name: Stop app and cleanup
-#        run: docker stop cms-editor-app && docker rm cms-editor-app
+#      - name: Stop src and cleanup
+#        run: docker stop cms-editor-src && docker rm cms-editor-src
