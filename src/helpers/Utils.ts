@@ -29,6 +29,7 @@ export class Utils {
         }
         return sanitizedUrl;
       } catch (e) {
+        console.error('Invalid URL:', e);
         return ''; // Invalid URL
       }
     }
@@ -48,6 +49,7 @@ export class Utils {
       new URL(cleanURL);
       return cleanURL;
     } catch (e) {
+      console.error('Invalid URL after joining:', e);
       return ''; // Invalid URL after joining
     }
   }

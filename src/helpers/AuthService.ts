@@ -91,7 +91,7 @@ export class AuthService {
     const now = Date.now();
     
     // Calculate time until refresh (token expiry minus buffer time)
-    let timeUntilRefresh = expiresAtMs - now - AuthService.TOKEN_REFRESH_BUFFER;
+    const timeUntilRefresh = expiresAtMs - now - AuthService.TOKEN_REFRESH_BUFFER;
     
     // If token is already expired or about to expire, refresh immediately
     if (timeUntilRefresh < 0) {

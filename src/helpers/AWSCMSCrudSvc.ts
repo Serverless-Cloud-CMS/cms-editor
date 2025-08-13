@@ -50,7 +50,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             };
             await this.s3Client.send(new PutObjectCommand(params));
         } catch (error) {
-            // @ts-ignore
+
             const err = error as Error;
             throw new Error(`Failed to create object: ${err.message}`);
         }
@@ -84,7 +84,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             };
             await this.s3Client.send(new PutObjectCommand(params));
         } catch (error) {
-            // @ts-ignore
+
             const err = error as Error;
             throw new Error(`Failed to create object: ${err.message}`);
         }
@@ -219,7 +219,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
                 Body: uint8Array,
                 ContentType: blob.type || 'image/png',
             };
-            let res = await this.s3Client.send(new PutObjectCommand(params));
+            const res = await this.s3Client.send(new PutObjectCommand(params));
         } catch (error) {
             const err = error as Error;
             throw new Error(`Failed to upload image blob: ${err.message}`);
@@ -348,7 +348,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             };
             await this.s3Client.send(new CopyObjectCommand(params));
         } catch (error) {
-            // @ts-ignore
+
             const err = error as Error;
             throw new Error(`Failed to copy object: ${err.message}`);
         }

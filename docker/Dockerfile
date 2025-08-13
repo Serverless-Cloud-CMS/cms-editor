@@ -3,9 +3,17 @@ FROM node:20-bookworm
 # Set environment variables
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-ENV TERRAFORM_VERSION="1.11.4"
-ENV AWS_CLI_VERSION="2.26.7"
+ENV TERRAFORM_VERSION="1.12.2"
+ENV AWS_CLI_VERSION="2.28.8"
+ENV GO_VERSION=1.23.8
 
+# Security Fix
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz && \
+    rm -rf /usr/local/go && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-arm64.tar.gz && \
+    rm go${GO_VERSION}.linux-arm64.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
 
 # Install dependencies and tools
 RUN apt-get update && apt-get install -y --no-install-recommends \

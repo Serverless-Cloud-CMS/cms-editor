@@ -51,7 +51,7 @@ class DataService {
         };
 
         // Pass AWS config directly without serialization/deserialization
-        // @ts-ignore
+        // @ts-expect-error AWS Cast Issue
         this.svc = new AWSCMSCrudSvc(awsConfig);
 
         this.ready = true;

@@ -127,9 +127,9 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
     };
 
     // Handler to open the image modal from ToolbarPlugin
-    const handleOpenImageModal = useCallback(() => {
-        setImageModalOpen(true);
-    }, []);
+    // const handleOpenImageModal = useCallback(() => {
+    //     setImageModalOpen(true);
+    // }, []);
 
     // Handler to insert image into the editor
     const handleSelectImage = useCallback((url: string, key: string, width?: number, height?: number) => {

@@ -59,8 +59,6 @@ jobs:
       - name: Build src in Docker
         run: npm run build
 
-
-
 #      - name: Start src in Docker
 #        run: docker run -d --name cms-editor-src -p 5173:5173 -v ${{ github.workspace }}:/src -w /src cms-editor-test npm run preview
 #

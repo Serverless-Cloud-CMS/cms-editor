@@ -35,7 +35,7 @@ export interface Config {
 }
 
 
-// @ts-ignore
+
 export const config: Config = {
     StageBucket: import.meta.env.VITE_STAGEBUCKET,
     StagePrefix: import.meta.env.VITE_STAGEPREFIX,
@@ -56,6 +56,7 @@ export const config: Config = {
     CatalogPrefix: import.meta.env.VITE_CATALOGPREFIX || "data/catalog/",
     CatalogImagePrefix: import.meta.env.VITE_CATALOGIMAGEPREFIX || "data/catalog/images/",
     CatalogEventSource: import.meta.env.VITE_CATALOGEVENTSOURCE || "catalog.published",
+    IdentityPoolId: import.meta.env.VITE_IDENTITYPOOLID,
     AuthConfig: {
         ClientId: import.meta.env.VITE_CLIENTID,
         IdentityPoolId: import.meta.env.VITE_IDENTITYPOOLID,
