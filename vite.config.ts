@@ -13,5 +13,8 @@ export default defineConfig({
                 '.tsx': 'tsx',
             },
         },
-    }
+    },
+    test: {
+        environment: 'jsdom',
+    },
 });
