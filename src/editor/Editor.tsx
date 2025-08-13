@@ -101,13 +101,28 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
         nodes: [HeadingNode, TableNode, TableRowNode, TableCellNode, ImageNode, ListNode, ListItemNode, CodeHighlightNode, CodeNode, LinkNode],
     };
 
-    const handleChange = (editorState: EditorState) => {
+    /**
+     * Sanitizes HTML content to prevent XSS attacks
+     * @param html The HTML content to sanitize
+     * @returns Sanitized HTML string
+     */
+    const sanitizeHTML = (html: string): string => {
+        // Basic sanitization of script tags and event handlers
+        // Note: In a production environment, a library like DOMPurify should be used
+        return html
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/on\w+="[^"]*"/g, '')
+            .replace(/on\w+='[^']*'/g, '')
+            .replace(/on\w+=\w+/g, '');
+    };
 
+    const handleChange = (editorState: EditorState) => {
         editorState.read(() => {
             // Handle editor state changes here
-            console.log('Editor content changed');
+            // Generate HTML content and sanitize it
             const htmlString = $generateHtmlFromNodes(editorRef, null);
-            console.log(htmlString);
+            const sanitizedHTML = sanitizeHTML(htmlString);
+            // HTML content is now sanitized but not logged to console
         });
     };
 

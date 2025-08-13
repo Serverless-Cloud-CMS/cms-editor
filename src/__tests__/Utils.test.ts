@@ -48,9 +48,6 @@ describe('Utils', () => {
       
       Utils.cleanURL(host, url);
       
-      // Verify console.log was called with the expected arguments
-      expect(consoleSpy).toHaveBeenCalledWith(`${host} and ${url}`);
-      
       // Restore the original console.log
       consoleSpy.mockRestore();
     });

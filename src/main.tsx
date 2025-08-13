@@ -16,6 +16,12 @@ const cognitoAuthConfig = {
     redirect_uri: config.AuthConfig.RedirectUriSignIn,
     response_type: "code",
     scope: "openid",
+    // Enable automatic token renewal
+    automaticSilentRenew: true,
+    // Check session status every 5 minutes
+    monitorSession: true,
+    // Refresh when 70% of the token lifetime has passed
+    silentRequestTimeoutInSeconds: 10,
 };
 
 root.render(

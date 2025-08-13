@@ -1,6 +1,6 @@
 {
   "name": "cms-editor",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "description": "",
   "type": "module",
   "scripts": {
@@ -11,9 +11,9 @@
   },
   "private": true,
   "dependencies": {
-    "@aws-sdk/client-cognito-identity": "^3.782.0",
-    "@aws-sdk/client-s3": "^3.738.0",
-    "@aws-sdk/client-eventbridge" : "^3.844.0",
+    "@aws-sdk/client-cognito-identity": "^3.864.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/client-eventbridge" : "^3.864.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@fontsource/roboto": "^5.1.1",

@@ -5,6 +5,8 @@
     <link rel="shortcut icon" href="favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="theme-color" content="#000000">
+    <!-- Content Security Policy to mitigate XSS attacks and other security vulnerabilities -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://*.amazonaws.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com; frame-src 'self'; object-src 'none'; base-uri 'self';">
     <link rel="manifest" href="/manifest.json">
     <title>CMS Editor</title>
   </head>

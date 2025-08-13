@@ -10,7 +10,6 @@ class DataService {
     constructor(service_instance: ICMSCrudService | null = null) {
         this.svc = service_instance;
         this.ready = false;
-        console.log("Service Init");
     }
 
     isReady(): boolean {
@@ -51,14 +50,11 @@ class DataService {
             }
         };
 
-        // Convert for Passing
-        const awsConfigString = JSON.stringify(awsConfig);
-
-        this.svc = new AWSCMSCrudSvc(JSON.parse(awsConfigString));
+        // Pass AWS config directly without serialization/deserialization
+        // @ts-ignore
+        this.svc = new AWSCMSCrudSvc(awsConfig);
 
         this.ready = true;
-
-        console.log("Service Init Complete");
     }
 
     getService(): ICMSCrudService {

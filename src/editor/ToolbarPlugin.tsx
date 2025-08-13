@@ -53,6 +53,7 @@ import GenerateImageModal from './GenerateImageModal';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import {Utils} from "../helpers/Utils";
 import {TOGGLE_LINK_COMMAND, $isLinkNode, $createLinkNode, LinkNode} from '@lexical/link';
+import { useNotification } from '../context/NotificationContext';
 
 // Define type for saved post data
 interface SavedPostData {
@@ -138,6 +139,7 @@ interface ToolbarPluginProps  {
 
 const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEditorRef, dataService, onPostLoaded, setIsPolling }) => {
     const [editor] = useLexicalComposerContext();
+    const { showNotification } = useNotification();
     const [headingAnchorEl, setHeadingAnchorEl] = useState<null | HTMLElement>(null);
     const [tableAnchorEl, setTableAnchorEl] = useState<null | HTMLElement>(null);
     const [imageAnchorEl, setImageAnchorEl] = useState<null | HTMLElement>(null);
@@ -172,11 +174,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             const fileName = `bedrock-${Date.now()}.png`;
             // Upload to S3 using dataService
             await dataService.uploadImageBlob(config.StageBucket, config.StagePrefix + fileName, blob);
-            window.alert('Image generated and uploaded to S3!');
+            showNotification('Image generated and uploaded to S3!', 'success');
             setGenerateModalOpen(false);
             // Optionally, refresh image selection modal or state here
         } catch (e: any) {
-            window.alert('Failed to generate or upload image: ' + (e && e.message ? e.message : e));
+            showNotification('Failed to generate or upload image: ' + (e && e.message ? e.message : e), 'error');
         } finally {
             setGenerating(false);
         }
@@ -409,17 +411,17 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 // Save the post with updated media
                 await Promise.all(imageOps);
                 await dataService.update(config.StageBucket, key, postData);
-                window.alert('Post media updated with AI generated images.');
+                showNotification('Post media updated with AI generated images.', 'success');
             }
             if (onPostLoaded) onPostLoaded(postData);
             editor.setEditorState(editor.parseEditorState(JSON.stringify(postData.content)));
             setLastSavedPost(postData);
             setSelectedCatalogId(postData.catalog_id || '');
             setSelectedCatalogTitle(postData.catalog_title || '');
-            window.alert('Post loaded!');
+            showNotification('Post loaded!', 'success');
             setLoadModalOpen(false);
         } catch (e) {
-            window.alert('Failed to load post.');
+            showNotification('Failed to load post.', 'error');
             console.log('Failed to load post.',e);
         }
     };
@@ -548,7 +550,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         await dataService.create(config.StageBucket, key, postData);
         setLastSavedPost(postData);
         if (onPostLoaded) onPostLoaded(postData);
-        window.alert(`Post saved as ${key}`);
+        showNotification(`Post saved as ${key}`, 'success');
     };
 
     // Add code block formatting
@@ -646,7 +648,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     // Handler for selecting a thumbnail
     const handleSelectThumbnail = async (url: string, key: string) => {
         if (!lastSavedPost) {
-            window.alert('Please save your post first before selecting a thumbnail.');
+            showNotification('Please save your post first before selecting a thumbnail.', 'warning');
             return;
         }
 
@@ -672,22 +674,22 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             setLastSavedPost(updatedPost);
             if (onPostLoaded) onPostLoaded(updatedPost);
             
-            window.alert('Thumbnail updated successfully!');
+            showNotification('Thumbnail updated successfully!', 'success');
             setThumbnailSelectModalOpen(false);
         } catch (e: any) {
-            window.alert('Failed to update thumbnail: ' + (e && e.message ? e.message : e));
+            showNotification('Failed to update thumbnail: ' + (e && e.message ? e.message : e), 'error');
         }
     };
 
     // Handler to release a post
     const handleReleasePost = async () => {
         if (!lastSavedPost || !lastSavedPost.published) {
-            window.alert('Please publish your post first before releasing it.');
+            showNotification('Please publish your post first before releasing it.', 'warning');
             return;
         }
         
         if (!lastSavedPost.catalog_id) {
-            window.alert('Please select a catalog and publish your post before releasing it.');
+            showNotification('Please select a catalog and publish your post before releasing it.', 'warning');
             setCatalogSelectModalOpen(true);
             return;
         }
@@ -696,7 +698,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             // Check if we're already polling
             const isCurrentlyPolling = document.querySelector('.MuiTypography-caption[color="info.main"]') !== null;
             if (isCurrentlyPolling) {
-                window.alert('Please wait while we retrieve the meta-data for your post.');
+                showNotification('Please wait while we retrieve the meta-data for your post.', 'info');
                 return;
             }
         }
@@ -706,11 +708,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         try {
             metaData = await dataService.getMetaData(lastSavedPost.id || '');
             if (!metaData) {
-                window.alert('Failed to retrieve meta-data for the post.');
+                showNotification('Failed to retrieve meta-data for the post.', 'error');
                 return;
             }
         } catch (e: any) {
-            window.alert('Failed to retrieve meta-data: ' + (e && e.message ? e.message : e));
+            showNotification('Failed to retrieve meta-data: ' + (e && e.message ? e.message : e), 'error');
             return;
         }
 
@@ -741,7 +743,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
             // Send the release event
             await dataService.sendReleaseEvent(message);
-            window.alert('Release event sent to Event Bus');
+            showNotification('Release event sent to Event Bus', 'info');
 
             // Poll for updated meta-data
             if (setIsPolling) setIsPolling(true);
@@ -766,14 +768,14 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
                 // Save the updated post to S3
                 await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
-                window.alert('Post released successfully');
+                showNotification('Post released successfully', 'success');
             } catch (metaError: any) {
-                window.alert('Post released, but failed to retrieve updated meta-data: ' + (metaError && metaError.message ? metaError.message : metaError));
+                showNotification('Post released, but failed to retrieve updated meta-data: ' + (metaError && metaError.message ? metaError.message : metaError), 'warning');
             } finally {
                 if (setIsPolling) setIsPolling(false);
             }
         } catch (e: any) {
-            window.alert('Failed to release post: ' + (e && e.message ? e.message : e));
+            showNotification('Failed to release post: ' + (e && e.message ? e.message : e), 'error');
             if (setIsPolling) setIsPolling(false);
         }
     };
@@ -781,12 +783,12 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     // Handler to publish as JSON
     const handlePublishAsJson = async () => {
         if (!lastSavedPost || !lastSavedPost.meta || !lastSavedPost.meta.title || !lastSavedPost.meta.author) {
-            window.alert('Please save your post first to set the title, author, and date.');
+            showNotification('Please save your post first to set the title, author, and date.', 'warning');
             return;
         }
         
         if (!selectedCatalogId || !selectedCatalogTitle) {
-            window.alert('Please select a catalog before publishing.');
+            showNotification('Please select a catalog before publishing.', 'warning');
             setCatalogSelectModalOpen(true);
             return;
         }
@@ -881,7 +883,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             }
 
             await dataService.create(config.PublishBucket, publishedKey, jsonExport);
-            window.alert(`JSON published to S3 as ${publishedKey}`);
+            showNotification(`JSON published to S3 as ${publishedKey}`, 'success');
 
             // Update the lastSavedPost with the published status
             const initialPublishedPost = {
@@ -918,14 +920,14 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
                 // Save the updated post to S3
                 await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
-                window.alert('Post published successfully');
+                showNotification('Post published successfully', 'success');
             } catch (metaError: any) {
-                window.alert('Post published, but failed to retrieve meta-data: ' + (metaError && metaError.message ? metaError.message : metaError));
+                showNotification('Post published, but failed to retrieve meta-data: ' + (metaError && metaError.message ? metaError.message : metaError), 'warning');
             } finally {
                 if (setIsPolling) setIsPolling(false);
             }
         } catch (e: any) {
-            window.alert('Failed to publish JSON to S3: ' + (e && e.message ? e.message : e));
+            showNotification('Failed to publish JSON to S3: ' + (e && e.message ? e.message : e), 'error');
         }
     };
 

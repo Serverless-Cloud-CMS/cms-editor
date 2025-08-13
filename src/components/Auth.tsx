@@ -45,12 +45,10 @@ const Auth: React.FC<AuthProps> = ({ auth: { token, user } }) => {
 
     const authClient = useAuth();
 
-    // Logout handler
+    // Logout handler - uses the App-level logout to ensure proper cleanup
     const signOutRedirect = () => {
+        // The actual logout logic is handled in App.tsx
         authClient.removeUser();
-        const { ClientId, RedirectUriSignOut, AppWebDomain } = config.AuthConfig;
-        const cognitoDomain = `https://${AppWebDomain}`;
-        window.location.href = `${cognitoDomain}/logout?client_id=${ClientId}&logout_uri=${encodeURIComponent(RedirectUriSignOut)}`;
     };
 
     // Initialize service on component mount

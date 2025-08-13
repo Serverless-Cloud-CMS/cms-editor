@@ -56,12 +56,30 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         }
     }
 
+    /**
+     * Sanitizes HTML content to prevent XSS attacks
+     * @param html The HTML content to sanitize
+     * @returns Sanitized HTML string
+     */
+    private sanitizeHTML(html: string): string {
+        // Basic sanitization of script tags and event handlers
+        // Note: In a production environment, a library like DOMPurify should be used
+        return html
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/on\w+="[^"]*"/g, '')
+            .replace(/on\w+='[^']*'/g, '')
+            .replace(/on\w+=\w+/g, '');
+    }
+
     async createHTML(bucket: string, key: string, data: string): Promise<void> {
         try {
+            // Sanitize the HTML before storing
+            const sanitizedData = this.sanitizeHTML(data);
+            
             const params = {
                 Bucket: bucket,
                 Key: key,
-                Body: data,
+                Body: sanitizedData,
                 ContentType: "text/html"
             };
             await this.s3Client.send(new PutObjectCommand(params));
@@ -80,10 +98,8 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             };
             const command = new GetObjectCommand(params);
             const response = await this.s3Client.send(command);
-            console.log(`Here post ${key}`);
             const data = await response.Body.transformToString();
             //const data = await this.streamToString(response.Body);
-            console.log(`Loaded post ${data}`);
             return JSON.parse(data);
         } catch (error) {
             const err = error as Error;
@@ -136,7 +152,6 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             };
             const command = new GetObjectCommand(params);
             const response = await this.s3Client.send(command);
-            console.log(response);
             return this.streamToUint8Array(response.Body);
         } catch (error) {
             const err = error as Error;
@@ -218,7 +233,6 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
     }
 
     private async streamToUint8Array(stream: any): Promise<Uint8Array> {
-        console.log(stream)
         const blob = new Blob([stream]);
         const response = new Response(blob);
         const buffer = await response.arrayBuffer();
@@ -281,7 +295,6 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         let retries = 0;
         while (retries < maxRetries) {
             try {
-                console.log(`Polling for meta-data for post ${postId}...`);
                 // Get S3 object and its LastModified date
                 const key = `${config.MetaDataPrefix}${postId}`;
                 const params = {
