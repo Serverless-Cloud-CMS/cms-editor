@@ -16,9 +16,7 @@ import {
     FORMAT_TEXT_COMMAND,
     TextFormatType,
     RangeSelection,
-    ParagraphNode,
-    $isElementNode,
-    $isTextNode
+    ParagraphNode
 } from 'lexical';
 import { HeadingNode, HeadingTagType } from '@lexical/rich-text';
 import { TextNode } from 'lexical';
@@ -28,7 +26,7 @@ import { config } from '../config';
 import {ICMSCrudService, MetaData} from "../helpers/ICMSCrudService";
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 import { $createCodeNode } from '@lexical/code';
-import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider, Link, Typography } from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, Tooltip, Divider } from '@mui/material';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -42,7 +40,6 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import CodeIcon from '@mui/icons-material/Code';
-import DownloadIcon from '@mui/icons-material/Download';
 import PublishIcon from '@mui/icons-material/Publish';
 import SendIcon from '@mui/icons-material/Send';
 import { $generateHtmlFromNodes } from '@lexical/html';
@@ -441,12 +438,6 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         const dateSaved = new Date().toISOString();
         const editorState = editor.getEditorState();
         const content = editorState.toJSON();
-
-        // Generate a safe title for the key
-        const safeTitle = (meta.title || 'untitled')
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
 
         // Use existing ID if available, otherwise generate a new one
         const id = lastSavedPost?.id || uuidv4();
@@ -968,7 +959,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             setError(e.message);
             setLoading(false);
           });
-      }, [isOpen]);
+      }, [isOpen, dataService]);
 
       if (!isOpen) return null;
 
@@ -1116,7 +1107,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             setError(e.message);
             setLoading(false);
           });
-      }, [isOpen]);
+      }, [isOpen, dataService]);
 
       if (!isOpen) return null;
 

@@ -46,7 +46,7 @@ const SelectImageModal: React.FC<SelectImageModalProps> = ({ isOpen, onClose, on
         setError(e.message);
         setLoading(false);
       });
-  }, [isOpen]);
+  }, [isOpen, dataService]);
 
   if (!isOpen) return null;
 

@@ -16,7 +16,6 @@ import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { ImageNode } from './ImageNode';
 import { ICMSCrudService } from "../helpers/ICMSCrudService";
 import SelectImageModal from './SelectImageModal';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
@@ -121,7 +120,8 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
             // Handle editor state changes here
             // Generate HTML content and sanitize it
             const htmlString = $generateHtmlFromNodes(editorRef, null);
-            const sanitizedHTML = sanitizeHTML(htmlString);
+            // Sanitize the HTML but we don't need to store it since we're not using it
+            sanitizeHTML(htmlString);
             // HTML content is now sanitized but not logged to console
         });
     };

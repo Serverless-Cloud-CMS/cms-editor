@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Dialog, 
   DialogTitle, 
@@ -40,13 +40,7 @@ const CatalogSelectModal: React.FC<CatalogSelectModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      loadCatalogs();
-    }
-  }, [open]);
-
-  const loadCatalogs = async () => {
+  const loadCatalogs = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -62,7 +56,13 @@ const CatalogSelectModal: React.FC<CatalogSelectModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [dataService]);
+  
+  useEffect(() => {
+    if (open) {
+      loadCatalogs();
+    }
+  }, [open, loadCatalogs]);
 
   const handleSelect = () => {
     if (!selectedCatalogId) {

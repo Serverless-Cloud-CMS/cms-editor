@@ -5,7 +5,6 @@ import Protected from './components/Auth';
 import { useAuth } from "react-oidc-context";
 import theme from "./theme";
 import {config} from "./config";
-import NonAuth from "./components/NonAuth";
 import { authService } from './helpers/AuthService';
 import SessionTimeoutDialog from './components/SessionTimeoutDialog';
 import { NotificationProvider } from './context/NotificationContext';
@@ -85,7 +84,7 @@ const App: React.FC = () => {
                 authService.cleanup();
             };
         }
-    }, [auth.isAuthenticated, auth.user]);
+    }, [auth.isAuthenticated, auth.user, signOutRedirect]);
 
     if (auth.isLoading) {
         return <div>Loading...</div>;

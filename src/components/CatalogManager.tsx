@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -34,7 +34,7 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ dataService }) => {
   const [selectedCatalog, setSelectedCatalog] = useState<CatalogEntry | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
-  const loadCatalogs = async () => {
+  const loadCatalogs = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -45,11 +45,11 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ dataService }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dataService]);
 
   useEffect(() => {
     loadCatalogs();
-  }, []);
+  }, [loadCatalogs]);
 
   const handleCreateCatalog = () => {
     setSelectedCatalog(null);

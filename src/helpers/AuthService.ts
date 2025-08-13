@@ -1,5 +1,4 @@
 import { User } from 'oidc-client-ts';
-import { config } from '../config';
 
 /**
  * AuthService handles authentication-related functionality including:
