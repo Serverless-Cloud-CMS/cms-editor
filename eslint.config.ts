@@ -4,8 +4,7 @@ import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
 import { defineConfig } from "eslint/config";
 
-
-
+// @ts-ignore
 export default defineConfig([
     tseslint.configs.recommended,
     {
@@ -15,11 +14,11 @@ export default defineConfig([
     extends: ["js/recommended"],
     languageOptions: { globals: globals.browser },
     rules: {
-      // Override for all files, but you can scope to ts/tsx if needed
-      "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-explicit-any": "off",
         'no-unused-vars': 'off',
         '@typescript-eslint/no-unused-vars': ['off']
     }
   },
   pluginReact.configs.flat.recommended,
 ]);
+

@@ -355,7 +355,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         try {
             const postData = await dataService.read(config.StageBucket, key) as SavedPostData;
             let requireSave = false;
-            let imageOps: any[] = [];
+            const imageOps: any[] = [];
             // Check for post is published, if so - load latest meta data
             console.log('postData', postData);
             if (postData.published && postData.published_data) {
