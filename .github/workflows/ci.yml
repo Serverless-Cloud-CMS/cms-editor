@@ -48,17 +48,16 @@ jobs:
         run: docker build -t cms-editor-test -f docker/Dockerfile .
 
       - name: Run npm install in Docker
-        run: docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm install
+        run: npm install
 
       - name: Run npm audit in Docker (fail on critical)
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm audit --audit-level=critical
+        run: npm audit --audit-level=critical
 
       - name: Run tests in Docker
-        run: docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm test
+        run: npm test
 
       - name: Build src in Docker
-        run: docker run --rm -v ${{ github.workspace }}:/src -w /src cms-editor-test npm run build
+        run: npm run build
 
 
 
