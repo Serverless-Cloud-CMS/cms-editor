@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      VITE_IDENTITYPOOLID: ""
+      VITE_USERPOOLID: ""
+      VITE_CLIENTID: ""
+      VITE_LOGINDOMAIN: ""
+      VITE_APPWEBDOMAIN: ""
+      VITE_REGION: ""
+      VITE_REDIRECTURISIGNIN: ""
+      VITE_REDIRECTURISIGNOUT: ""
+      VITE_STAGEBUCKET: ""
+      VITE_STAGEPREFIX: ""
+      VITE_PUBLISHBUCKET: ""
+      VITE_READYFORPUBLISHPREFIX: ""
+      VITE_MEDIAPROXY: ""
+      VITE_RELEASEURL: ""
+      VITE_RELEASEEVENTBUSNAME: ""
+      VITE_RELEASEEVENTSOURCE: ""
+      VITE_METADATABUCKET: ""
+      VITE_METADATAPREFIX: ""
+      VITE_PREVIEWBUCKET: ""
+      VITE_PREVIEWURL: ""
+      VITE_CATALOGEVENTSOURCE: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Docker image
+        run: docker build -t cms-editor-test -f docker/Dockerfile .
+
+      - name: Run npm install in Docker
+        run: docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm install
+
+      - name: Run npm audit in Docker (fail on critical)
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm audit --audit-level=critical
+
+      - name: Run tests in Docker
+        run: docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm test
+
+      - name: Build app in Docker
+        run: docker run --rm -v ${{ github.workspace }}:/app -w /app cms-editor-test npm run build
+
+#      - name: Start app in Docker
+#        run: docker run -d --name cms-editor-app -p 5173:5173 -v ${{ github.workspace }}:/app -w /app cms-editor-test npm run preview
+#
+#      - name: Install Puppeteer
+#        run: npm install puppeteer
+#
+#      - name: Wait for app to start
+#        run: sleep 10
+#
+#      - name: Check login page with Puppeteer
+#        run: node scripts/check-login.js
+#
+#      - name: Stop app and cleanup
+#        run: docker stop cms-editor-app && docker rm cms-editor-app
