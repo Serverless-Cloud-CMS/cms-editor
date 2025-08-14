@@ -2,6 +2,8 @@
 
 This is a web-based Content Management System (CMS) Editor built with React and TypeScript. It provides a rich text editing experience with support for tables, images, and authentication.
 
+[![BUILD](https://github.com/joshua-remy/cms-lexical-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/joshua-remy/cms-lexical-editor/actions/workflows/ci.yml)
+
 ## Features
 - Rich text editing
 - Table and image support
