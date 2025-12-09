@@ -14,7 +14,7 @@ import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import { ICMSCrudService } from '../helpers/ICMSCrudService';
 import { CatalogEntry } from '../helpers/CatalogEntry';
 import SelectImageModal from '../editor/SelectImageModal';
-import { config } from '../config';
+import { editor_config } from '../editor_config';
 import { Utils } from '../helpers/Utils';
 
 export interface CatalogModalProps {
@@ -47,7 +47,7 @@ const CatalogModal: React.FC<CatalogModalProps> = ({
         setDescription(initialCatalog.catalog_description);
         setImageKey(initialCatalog.catalog_image_key);
         if (initialCatalog.catalog_image_key) {
-          setImageUrl(Utils.cleanURL(config.MediaProxy, initialCatalog.catalog_image_key));
+          setImageUrl(Utils.cleanURL(editor_config.MediaProxy, initialCatalog.catalog_image_key));
         } else {
           setImageUrl('');
         }

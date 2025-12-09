@@ -19,13 +19,6 @@ provider "aws" {
   region = var.region
 }
 
-variable "cms_publish_bucket" {
-  description = "CMS Publish Bucket Name"
-}
-variable "workflow_bucket" {
-  description = "Workflow Bucket Name"
-}
-
 
 
 
@@ -58,8 +51,8 @@ resource "aws_cloudformation_stack" "editor" {
     NamePrefix = "LocalEditor"
     UserPoolName = "${upper(local.env)}_CMS_Local_Auth"
     SubDomain    = local.auth-namespace-id
-    CMSPublishBucket = var.cms_publish_bucket
-    MetadataBucket  = var.workflow_bucket
+    CMSPublishBucket ="${local.stack-name}-content"
+    MetadataBucket  = "${local.stack-name}-content"
   }
   capabilities = ["CAPABILITY_IAM","CAPABILITY_AUTO_EXPAND"]
 
@@ -79,14 +72,14 @@ VITE_REDIRECTURISIGNOUT='http://localhost:3000/signout.html'
 VITE_STAGEBUCKET="${aws_cloudformation_stack.editor.outputs["EditorWebSiteBucketName"]}"
 VITE_STAGEPREFIX="posts/"
 VITE_READYFORPUBLISHPREFIX="stage/"
-VITE_PUBLISHBUCKET="${var.workflow_bucket}"
+VITE_PUBLISHBUCKET="${local.stack-name}-content"
 VITE_PREVIEWBUCKET="${aws_cloudformation_stack.editor.outputs["EditorPublishBucketName"]}"
 VITE_EVENTBUSNAME = ""
 VITE_EVENTRELEASESOURCE = ""
 VITE_REGION="${var.region}"
 VITE_RELEASEURL="http://localhost:3001"
 VITE_MEDIAPROXY="https://${aws_cloudformation_stack.editor.outputs["EditorPublishBucketName"]}.s3.amazonaws.com/"
-VITE_METADATABUCKET="${var.workflow_bucket}"
+VITE_METADATABUCKET="${local.stack-name}-content"
 VITE_METADATAPREFIX="metadata/"
 EOT
   filename = "./../.env"

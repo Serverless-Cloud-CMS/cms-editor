@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { CognitoIdentityClient } from "@aws-sdk/client-cognito-identity";
 import DataService from '../helpers/DataService';
 import { AWSCMSCrudSvc } from '../helpers/AWSCMSCrudSvc';
-import { config } from '../config';
+import { editor_config } from '../editor_config';
 
 // Mock the AWS SDK clients
 vi.mock('@aws-sdk/client-cognito-identity', () => {
@@ -24,8 +24,8 @@ vi.mock('../helpers/AWSCMSCrudSvc', () => {
 });
 
 // Mock the config
-vi.mock('../config', () => ({
-  config: {
+vi.mock('../editor_config', () => ({
+    editor_config: {
     StageBucket: 'test-stage-bucket',
     StagePrefix: 'test-stage-prefix',
     MediaPrefix: 'media/',

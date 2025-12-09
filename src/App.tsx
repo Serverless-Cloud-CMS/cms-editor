@@ -4,7 +4,7 @@ import { styled } from '@mui/material/styles';
 import Protected from './components/Auth';
 import { useAuth } from "react-oidc-context";
 import theme from "./theme";
-import {config} from "./config";
+import {editor_config} from "./editor_config";
 import { authService } from './helpers/AuthService';
 import SessionTimeoutDialog from './components/SessionTimeoutDialog';
 import { NotificationProvider } from './context/NotificationContext';
@@ -43,9 +43,9 @@ const App: React.FC = () => {
         auth.removeUser();
         
         // Redirect to Cognito logout
-        const clientId = config.AuthConfig.ClientId;
-        const logoutUri = config.AuthConfig.RedirectUriSignOut;
-        const cognitoDomain = `https://${config.AuthConfig.AppWebDomain}`;
+        const clientId = editor_config.AuthConfig.ClientId;
+        const logoutUri = editor_config.AuthConfig.RedirectUriSignOut;
+        const cognitoDomain = `https://${editor_config.AuthConfig.AppWebDomain}`;
         window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
     };
     

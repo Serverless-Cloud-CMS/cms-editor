@@ -2,7 +2,7 @@
 
 This is a web-based Content Management System (CMS) Editor built with React and TypeScript. It provides a rich text editing experience with support for tables, images, and authentication.
 
-[![BUILD](https://github.com/joshua-remy/cms-lexical-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/joshua-remy/cms-lexical-editor/actions/workflows/ci.yml)
+[![BUILD](https://github.com/Serverless-Cloud-CMS/cms-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/Serverless-Cloud-CMS/cms-editor/actions/workflows/ci.yml)
 
 ## Features
 - Rich text editing
@@ -40,13 +40,15 @@ yarn dev
 ```
 The app will be available at `http://localhost:3000` (default Vite port).
 
-## Docker Instructions
+## Docker Easy Instructions
 
-### Build Docker Image
+### Build and Run Docker Image
 To build the Docker image:
 ```sh
-docker build -t cms-editor ./docker
+./docker-run.sh --mount-source #Mounts the source for easier development
 ```
+
+# Docker Manual Instructions
 
 ### Run Docker Container
 To run the application in a Docker container:

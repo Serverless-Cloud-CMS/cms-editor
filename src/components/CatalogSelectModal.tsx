@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { ICMSCrudService } from '../helpers/ICMSCrudService';
 import { CatalogEntry } from '../helpers/CatalogEntry';
-import { config } from '../config';
+import { editor_config } from '../editor_config';
 import { Utils } from '../helpers/Utils';
 
 export interface CatalogSelectModalProps {
@@ -111,7 +111,7 @@ const CatalogSelectModal: React.FC<CatalogSelectModalProps> = ({
                     {catalog.catalog_image_key && (
                       <ListItemAvatar>
                         <Avatar 
-                          src={Utils.cleanURL(config.MediaProxy, catalog.catalog_image_key)}
+                          src={Utils.cleanURL(editor_config.MediaProxy, catalog.catalog_image_key)}
                           alt={catalog.catalog_title}
                           variant="rounded"
                           sx={{ width: 60, height: 60, mr: 2 }}
