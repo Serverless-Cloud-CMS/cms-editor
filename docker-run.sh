@@ -87,14 +87,14 @@ if [ "$MOUNT_SOURCE" = true ]; then
     --name "$CONTAINER_NAME" \
     -v "$HOME/.aws:/home/node/.aws:ro" \
     -v "$PROJECT_ROOT:/src" \
-    -p 3001:3000 \
+    -p 3000:3000 \
     "$IMAGE_NAME" /bin/bash
 elif [ "$BUILD_WITH_SOURCE" = true ]; then
   echo "Running Docker container with project source built into the image..."
   docker run --rm -it \
     --name "$CONTAINER_NAME" \
     -v "$HOME/.aws:/home/node/.aws:ro" \
-    -p 3001:3000 \
+    -p 3000:3000 \
     "$IMAGE_NAME" /bin/bash
 else # For tests and other commands
   echo "Running Docker container without mounting project source..."
