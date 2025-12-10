@@ -1,5 +1,5 @@
 import { CognitoIdentityClient, GetIdCommand, GetCredentialsForIdentityCommand } from "@aws-sdk/client-cognito-identity";
-import {config} from "../config";
+import {editor_config} from "../editor_config";
 import {AWSCMSCrudSvc} from "./AWSCMSCrudSvc";
 import {ICMSCrudService} from "./ICMSCrudService";
 
@@ -22,12 +22,12 @@ class DataService {
      * @returns {Promise<void>}
      */
     async init(token: string): Promise<void> {
-        const cognitoClient = new CognitoIdentityClient({ region: config.Region });
+        const cognitoClient = new CognitoIdentityClient({ region: editor_config.Region });
 
         const getIdCommand = new GetIdCommand({
-            IdentityPoolId: config.AuthConfig.IdentityPoolId,
+            IdentityPoolId: editor_config.AuthConfig.IdentityPoolId,
             Logins: {
-                [`cognito-idp.${config.Region}.amazonaws.com/${config.AuthConfig.UserPoolId}`]: token
+                [`cognito-idp.${editor_config.Region}.amazonaws.com/${editor_config.AuthConfig.UserPoolId}`]: token
             }
         });
 
@@ -35,14 +35,14 @@ class DataService {
         const getCredentialsCommand = new GetCredentialsForIdentityCommand({
             IdentityId: identityId.IdentityId,
             Logins: {
-                [`cognito-idp.${config.Region}.amazonaws.com/${config.AuthConfig.UserPoolId}`]: token
+                [`cognito-idp.${editor_config.Region}.amazonaws.com/${editor_config.AuthConfig.UserPoolId}`]: token
             }
         });
 
         const credentials = await cognitoClient.send(getCredentialsCommand);
 
         const awsConfig = {
-            region: config.Region,
+            region: editor_config.Region,
             credentials: {
                 accessKeyId: credentials.Credentials!.AccessKeyId,
                 secretAccessKey: credentials.Credentials!.SecretKey,

@@ -22,7 +22,8 @@ import { HeadingNode, HeadingTagType } from '@lexical/rich-text';
 import { TextNode } from 'lexical';
 import './Editor.css';
 import { $createImageNode } from './ImageNode';
-import { config } from '../config';
+import { editor_config } from '../editor_config';
+import { EndPoint, endpoints } from '../editor_endpoints';
 import {ICMSCrudService, MetaData} from "../helpers/ICMSCrudService";
 import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 import { $createCodeNode } from '@lexical/code';
@@ -84,7 +85,7 @@ interface SavedPostData {
   };
   srcVersion?: string;
   key?: string;
-  meta: { title: string; author: string; dateSaved: string };
+  meta?: { title: string; author: string; dateSaved: string };
   // New fields for version 4
   released?: boolean;
   preview?: {
@@ -170,7 +171,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             // Create a file name
             const fileName = `bedrock-${Date.now()}.png`;
             // Upload to S3 using dataService
-            await dataService.uploadImageBlob(config.StageBucket, config.StagePrefix + fileName, blob);
+            await dataService.uploadImageBlob(editor_config.StageBucket, editor_config.StagePrefix + fileName, blob);
             showNotification('Image generated and uploaded to S3!', 'success');
             setGenerateModalOpen(false);
             // Optionally, refresh image selection modal or state here
@@ -291,10 +292,10 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             if (!file) return;
             const arrayBuffer = await file.arrayBuffer();
             const data = new Uint8Array(arrayBuffer);
-            const key = `${config.MediaPrefix}${Date.now()}_${file.name}`;
-            await dataService.createMedia(config.StageBucket, key, data, file.type);
+            const key = `${editor_config.MediaPrefix}${Date.now()}_${file.name}`;
+            await dataService.createMedia(editor_config.StageBucket, key, data, file.type);
 
-            const url = Utils.cleanURL(config.MediaProxy,key);
+            const url = Utils.cleanURL(editor_config.MediaProxy,key);
             editor.update(() => {
                 const selection = $getSelection();
                 if (!$isRangeSelection(selection)) return;
@@ -353,7 +354,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
     const handleSelectPost = async (key: string) => {
         try {
-            const postData = await dataService.read(config.StageBucket, key) as SavedPostData;
+            const postData = await dataService.read(editor_config.StageBucket, key) as SavedPostData;
             let requireSave = false;
             const imageOps: any[] = [];
             // Check for post is published, if so - load latest meta data
@@ -378,7 +379,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                         const existingImage = postData.media.find(mediaItem => mediaItem.key === imageDetail.origSrc);
                         if (!existingImage) {
                             console.log('Here in ai ...2');
-                            imageOps.push(dataService.copyObject(config.PublishBucket, imageDetail.origSrc, config.StageBucket, imageDetail.origSrc));
+                            imageOps.push(dataService.copyObject(endpoints.Preview.Bucket, imageDetail.origSrc, editor_config.StageBucket, imageDetail.origSrc));
                             postData.media.push({
                                 name: imageDetail.title,
                                 description: imageDetail.description,
@@ -407,7 +408,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             if (requireSave) {
                 // Save the post with updated media
                 await Promise.all(imageOps);
-                await dataService.update(config.StageBucket, key, postData);
+                await dataService.update(editor_config.StageBucket, key, postData);
                 showNotification('Post media updated with AI generated images.', 'success');
             }
             if (onPostLoaded) onPostLoaded(postData);
@@ -442,7 +443,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         // Use existing ID if available, otherwise generate a new one
         const id = lastSavedPost?.id || uuidv4();
         const postKey = `${id}`;
-        const key = `${config.StagePrefix || ''}${postKey}.json`;
+        const key = `${editor_config.StagePrefix || ''}${postKey}.json`;
 
         // Generate HTML to parse for images
         let htmlString = '';
@@ -485,8 +486,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
             // Extract the key from the src URL if it's a media URL
             let key = src;
-            if (src.includes(config.MediaProxy)) {
-                key = src.replace(`${config.MediaProxy}/`, '');
+            if (src.includes(editor_config.MediaProxy)) {
+                key = src.replace(`${editor_config.MediaProxy}/`, '');
             }
 
             // Check if Media item is already present based on key
@@ -538,7 +539,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             thumbnail: thumbnailData
         };
 
-        await dataService.create(config.StageBucket, key, postData);
+        await dataService.create(editor_config.StageBucket, key, postData);
         setLastSavedPost(postData);
         if (onPostLoaded) onPostLoaded(postData);
         showNotification(`Post saved as ${key}`, 'success');
@@ -659,7 +660,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             };
 
             // Save the updated post
-            await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
+            await dataService.update(editor_config.StageBucket, lastSavedPost.src || '', updatedPost);
             
             // Update state
             setLastSavedPost(updatedPost);
@@ -729,11 +730,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                         catalog_id: lastSavedPost.catalog_id
                     }
                 },
-                source: config.ReleaseEventSource
+                source: endpoints.Release.EventSource
             }
 
             // Send the release event
-            await dataService.sendReleaseEvent(message);
+            await dataService.sendEvent(message, endpoints.Release);
             showNotification('Release event sent to Event Bus', 'info');
 
             // Poll for updated meta-data
@@ -758,7 +759,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 if (onPostLoaded) onPostLoaded(updatedPost);
 
                 // Save the updated post to S3
-                await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
+                await dataService.update(editor_config.StageBucket, lastSavedPost.src || '', updatedPost);
                 showNotification('Post released successfully', 'success');
             } catch (metaError: any) {
                 showNotification('Post released, but failed to retrieve updated meta-data: ' + (metaError && metaError.message ? metaError.message : metaError), 'warning');
@@ -772,7 +773,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
     };
 
     // Handler to publish as JSON
-    const handlePublishAsJson = async () => {
+    const handlePublishAsJson = async (endpoint: EndPoint) => {
         if (!lastSavedPost || !lastSavedPost.meta || !lastSavedPost.meta.title || !lastSavedPost.meta.author) {
             showNotification('Please save your post first to set the title, author, and date.', 'warning');
             return;
@@ -811,8 +812,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
             // Extract the key from the src URL if it's a media URL
             let key = src;
-            if (src.includes(config.MediaProxy)) {
-                key = src.replace(`${config.MediaProxy}`, '');
+            if (src.includes(editor_config.MediaProxy)) {
+                key = src.replace(`${editor_config.MediaProxy}`, '');
                 console.log("Replacing Media Key with New key = "+key);
             }
 
@@ -838,7 +839,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
 
         // Create the published key using the ReadyForPublishPrefix
         console.log(lastSavedPost);
-        const publishedKey = `${config.ReadyForPublishPrefix}${lastSavedPost.postKey}.${publishedId}.json`;
+        const publishedKey = `${endpoint.Prefix}${lastSavedPost.postKey}.${publishedId}.json`;
         console.log('Publishing as JSON:', publishedKey);
         // Create the JSON export
         const jsonExport: SavedPostData = {
@@ -869,11 +870,11 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             for (const mediaItem of jsonExport.media || []) {
                 if (mediaItem.key) {
                     // Use the copyObject method to copy media from StageBucket to PublishBucket
-                    await dataService.copyObject(config.StageBucket, mediaItem.key, config.PublishBucket, mediaItem.key);
+                    await dataService.copyObject(editor_config.StageBucket, mediaItem.key, endpoints.Preview.Bucket, mediaItem.key);
                 }
             }
 
-            await dataService.create(config.PublishBucket, publishedKey, jsonExport);
+            await dataService.create(endpoint.Bucket, publishedKey, jsonExport);
             showNotification(`JSON published to S3 as ${publishedKey}`, 'success');
 
             // Update the lastSavedPost with the published status
@@ -910,7 +911,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
                 if (onPostLoaded) onPostLoaded(updatedPost);
 
                 // Save the updated post to S3
-                await dataService.update(config.StageBucket, lastSavedPost.src || '', updatedPost);
+                await dataService.update(editor_config.StageBucket, lastSavedPost.src || '', updatedPost);
                 showNotification('Post published successfully', 'success');
             } catch (metaError: any) {
                 showNotification('Post published, but failed to retrieve meta-data: ' + (metaError && metaError.message ? metaError.message : metaError), 'warning');
@@ -938,7 +939,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         if (!isOpen) return;
         setLoading(true);
         setError(null);
-        dataService.listMedia(config.StageBucket, config.MediaPrefix || '')
+        dataService.listMedia(editor_config.StageBucket, editor_config.MediaPrefix || '')
           .then(keys => {
             // Filter for image files
             const imageKeys = keys.filter(k => 
@@ -947,7 +948,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
             
             // Convert to array of objects with URL and key
             const imageObjects = imageKeys.map(key => ({
-              url: Utils.cleanURL(config.MediaProxy, key),
+              url: Utils.cleanURL(editor_config.MediaProxy, key),
               key,
               name: key.split('/').pop() || key
             }));
@@ -1083,14 +1084,14 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         if (!isOpen) return;
         setLoading(true);
         setError(null);
-        dataService.listMedia(config.StageBucket, config.StagePrefix || '')
+        dataService.listMedia(editor_config.StageBucket, editor_config.StagePrefix || '')
           .then(keys => {
             const jsonKeys = keys.filter(k => k.endsWith('.json'));
             setPostKeys(jsonKeys);
             // Optionally fetch meta for each post (e.g. first 1KB of each file)
             Promise.all(jsonKeys.map(async key => {
               try {
-                const json = await dataService.read(config.StageBucket, key);
+                const json = await dataService.read(editor_config.StageBucket, key);
                 const meta = (json && typeof json === 'object' && 'meta' in json && (json as any).meta) ? (json as any).meta : {};
                 return { key, meta };
               } catch {
@@ -1347,7 +1348,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         <Tooltip title={lastSavedPost ? "Publish as HTML" : "Save post first to enable publishing"}>
           <span>
             <IconButton 
-              onClick={handlePublishAsJson} 
+              onClick={() => handlePublishAsJson(endpoints.Preview)}
               size="small" 
               disabled={!lastSavedPost || !selectedCatalogId || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
               color={lastSavedPost?.published ? "success" : lastSavedPost ? "primary" : "default"}
@@ -1361,7 +1362,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = ({ onOpenImageModal, setEdit
         <Tooltip title={lastSavedPost?.published ? (lastSavedPost?.catalog_id ? "Release Post" : "Select a catalog first") : "Publish post first to enable releasing"}>
           <span>
             <IconButton 
-              onClick={handleReleasePost} 
+              onClick={() => handleReleasePost()}
               size="small" 
               disabled={!lastSavedPost?.published || !lastSavedPost?.catalog_id || document.querySelector('.MuiTypography-caption[color="info.main"]') !== null}
               color={lastSavedPost?.released ? "success" : "primary"}

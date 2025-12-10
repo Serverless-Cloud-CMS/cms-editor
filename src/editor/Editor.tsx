@@ -25,7 +25,8 @@ import 'prismjs/themes/prism.css';
 import CodeHighlightPlugin from "./CodeHighlightPlugin";
 import { LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
-import {config} from "../config";
+import {editor_config} from "../editor_config";
+import {endpoints} from "../editor_endpoints";
 import {Utils} from "../helpers/Utils";
 
 
@@ -153,7 +154,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                         {/* Display thumbnail if available, otherwise use first media item */}
                         {((loadedPost.thumbnail && loadedPost.thumbnail.key) || (loadedPost.media && loadedPost.media.length > 0)) && (
                         <Avatar
-                            src={Utils.cleanURL(config.MediaProxy, loadedPost.thumbnail?.key || (loadedPost.media && loadedPost.media[0]?.key) || '')}
+                            src={Utils.cleanURL(editor_config.MediaProxy, loadedPost.thumbnail?.key || (loadedPost.media && loadedPost.media[0]?.key) || '')}
                             alt={loadedPost.thumbnail?.name || (loadedPost.media && loadedPost.media[0]?.key) || ''}
                             sx={{ width: 64, height: 64, mr: 2 }}
                             variant="rounded"
@@ -173,7 +174,7 @@ const Editor: React.FC<{ dataService: ICMSCrudService }> = ({ dataService }) => 
                                 </Typography>
                                 {loadedPost.preview?.catalogEntryUri && (
                                     <Link
-                                        href={Utils.cleanURL(config.PreviewURL, loadedPost.preview.catalogEntryUri)}
+                                        href={Utils.cleanURL(endpoints.Preview.URL, loadedPost.preview.catalogEntryUri)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         variant="caption"

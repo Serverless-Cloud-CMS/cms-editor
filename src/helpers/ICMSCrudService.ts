@@ -1,4 +1,5 @@
 import { CatalogEntry, CatalogPublishEventDetail } from './CatalogEntry';
+import {EndPoint} from "../editor_endpoints";
 
 export interface ReleaseEventDetail {
     transform: {
@@ -66,14 +67,15 @@ export interface ICMSCrudService {
     uploadImageBlob(bucket: string, key: string, blob: Blob): Promise<void>;
     copyObject(sourceBucket: string, sourceKey: string, destinationBucket: string, destinationKey: string): Promise<void>;    // New methods for Version 3
     getMetaData(postId: string): Promise<MetaData>;
-    sendReleaseEvent(eventDetail: ReleaseEventDetail): Promise<void>;
+    sendEvent(eventDetail: ReleaseEventDetail, endpoint: EndPoint): Promise<void>;
+    sendEvent(eventDetail: ReleaseEventDetail, endpoint: EndPoint): Promise<void>;
     pollForMetaData(postId: string, maxRetries?: number, retryDelay?: number): Promise<MetaData>;
     
     // Catalog operations for Version 5
-    createCatalog(catalog: CatalogEntry): Promise<void>;
-    updateCatalog(catalog: CatalogEntry): Promise<void>;
+    createCatalog(catalog: CatalogEntry, endpoint?: EndPoint): Promise<void>;
+    updateCatalog(catalog: CatalogEntry, endpoint?: EndPoint): Promise<void>;
     getCatalog(catalogId: string): Promise<CatalogEntry>;
     listCatalogs(): Promise<CatalogEntry[]>;
-    publishCatalog(catalog: CatalogEntry): Promise<void>;
-    sendCatalogPublishEvent(eventDetail: CatalogPublishEventDetail): Promise<void>;
+    publishCatalog(catalog: CatalogEntry, endpoint: EndPoint): Promise<void>;
+    sendCatalogPublishEvent(eventDetail: CatalogPublishEventDetail, endpoint: EndPoint): Promise<void>;
 }

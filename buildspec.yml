@@ -27,6 +27,7 @@ phases:
       - echo VITE_RELEASEURL="${RELEASE_URL}" >> .env
       - echo VITE_RELEASEEVENTBUSNAME="${EVENTBUS}" >> .env
       - echo VITE_RELEASEEVENTSOURCE="${RELEASE_SOURCE}" >> .env
+      - echo VITE_EVENTBUSNAME="${EVENTBUS}" >> .env
       - echo VITE_METADATABUCKET="${METADATA_BUCKET}" >> .env
       - echo VITE_METADATAPREFIX="${METADATA_PREFIX}" >> .env
       - echo VITE_PREVIEWBUCKET="${PREVIEW_BUCKET}" >> .env

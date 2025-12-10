@@ -19,8 +19,9 @@ import AddIcon from '@mui/icons-material/Add';
 import { ICMSCrudService } from '../helpers/ICMSCrudService';
 import { CatalogEntry } from '../helpers/CatalogEntry';
 import CatalogModal from './CatalogModal';
-import { config } from '../config';
+import { editor_config } from '../editor_config';
 import { Utils } from '../helpers/Utils';
+import {endpoints} from "../editor_endpoints";
 
 interface CatalogManagerProps {
   dataService: ICMSCrudService;
@@ -64,7 +65,7 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ dataService }) => {
   const handlePublishCatalog = async (catalog: CatalogEntry) => {
     setPublishingId(catalog.catalog_id);
     try {
-      await dataService.publishCatalog(catalog);
+      await dataService.publishCatalog(catalog, endpoints.Preview);
       // Reload catalogs to get updated published status
       await loadCatalogs();
     } catch (err) {
@@ -133,7 +134,7 @@ const CatalogManager: React.FC<CatalogManagerProps> = ({ dataService }) => {
                     {catalog.catalog_image_key && (
                       <Box 
                         component="img" 
-                        src={Utils.cleanURL(config.MediaProxy, catalog.catalog_image_key)}
+                        src={Utils.cleanURL(editor_config.MediaProxy, catalog.catalog_image_key)}
                         alt={catalog.catalog_title}
                         sx={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 1 }}
                       />

@@ -2,7 +2,8 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, List
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { ICMSCrudService, ReleaseEventDetail, MetaData } from "./ICMSCrudService";
 import { CatalogEntry, CatalogPublishEventDetail } from "./CatalogEntry";
-import { config } from "../config";
+import { editor_config} from "../editor_config";
+import {EndPoint} from "../editor_endpoints";
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -246,9 +247,9 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      */
     async getMetaData(postId: string): Promise<MetaData> {
         try {
-            const key = `${config.MetaDataPrefix}${postId}`;
+            const key = `${editor_config.MetaDataPrefix}${postId}`;
             const params = {
-                Bucket: config.MetaDataBucket,
+                Bucket: editor_config.MetaDataBucket,
                 Key: key
             };
             const command = new GetObjectCommand(params);
@@ -265,15 +266,15 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      * Sends a release event to the Event Bus
      * @param eventDetail The details of the release event
      */
-    async sendReleaseEvent(eventDetail: ReleaseEventDetail): Promise<void> {
+    async sendEvent(eventDetail: ReleaseEventDetail, endpointConfig: EndPoint): Promise<void> {
         try {
             const params = {
                 Entries: [
                     {
-                        Source: config.ReleaseEventSource,
+                        Source: endpointConfig.EventSource,
                         DetailType: 'content-changes',
                         Detail: JSON.stringify(eventDetail),
-                        EventBusName: config.ReleaseEventBusName
+                        EventBusName: endpointConfig.EventBusName
                     }
                 ]
             };
@@ -296,9 +297,9 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
         while (retries < maxRetries) {
             try {
                 // Get S3 object and its LastModified date
-                const key = `${config.MetaDataPrefix}${postId}`;
+                const key = `${editor_config.MetaDataPrefix}${postId}`;
                 const params = {
-                    Bucket: config.MetaDataBucket,
+                    Bucket: editor_config.MetaDataBucket,
                     Key: key
                 };
                 const command = new GetObjectCommand(params);
@@ -375,9 +376,9 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
                 catalog.published = false;
             }
             
-            const key = `${config.CatalogPrefix}${catalog.catalog_id}`;
+            const key = `${editor_config.CatalogPrefix}${catalog.catalog_id}`;
             const params = {
-                Bucket: config.StageBucket,
+                Bucket: editor_config.StageBucket,
                 Key: key,
                 Body: JSON.stringify(catalog),
                 ContentType: 'application/json'
@@ -401,9 +402,9 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
                 throw new Error('Catalog ID is required for update');
             }
             
-            const key = `${config.CatalogPrefix}${catalog.catalog_id}`;
+            const key = `${editor_config.CatalogPrefix}${catalog.catalog_id}`;
             const params = {
-                Bucket: config.StageBucket,
+                Bucket: editor_config.StageBucket,
                 Key: key,
                 Body: JSON.stringify(catalog),
                 ContentType: 'application/json'
@@ -423,9 +424,9 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      */
     async getCatalog(catalogId: string): Promise<CatalogEntry> {
         try {
-            const key = `${config.CatalogPrefix}${catalogId}`;
+            const key = `${editor_config.CatalogPrefix}${catalogId}`;
             const params = {
-                Bucket: config.StageBucket,
+                Bucket: editor_config.StageBucket,
                 Key: key
             };
             
@@ -447,8 +448,8 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
     async listCatalogs(): Promise<CatalogEntry[]> {
         try {
             const params = {
-                Bucket: config.StageBucket,
-                Prefix: config.CatalogPrefix
+                Bucket: editor_config.StageBucket,
+                Prefix: editor_config.CatalogPrefix
             };
             
             const command = new ListObjectsV2Command(params);
@@ -463,7 +464,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             for (const item of response.Contents) {
                // if (item.Key && item.Key.endsWith('.json')) {
                     const getParams = {
-                        Bucket: config.StageBucket,
+                        Bucket: editor_config.StageBucket,
                         Key: item.Key
                     };
                     
@@ -486,7 +487,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      * Publishes a catalog entry
      * @param catalog The catalog entry to publish
      */
-    async publishCatalog(catalog: CatalogEntry): Promise<void> {
+    async publishCatalog(catalog: CatalogEntry, endpoint: EndPoint): Promise<void> {
         try {
             // Ensure catalog_id exists
             if (!catalog.catalog_id) {
@@ -500,14 +501,14 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
             await this.updateCatalog(catalog);
             
             // Copy the catalog to the publish bucket
-            const sourceKey = `${config.CatalogPrefix}${catalog.catalog_id}`;
+            const sourceKey = `${editor_config.CatalogPrefix}${catalog.catalog_id}`;
             const destinationKey = sourceKey;
             
-            await this.copyObject(config.StageBucket, sourceKey, config.PublishBucket, destinationKey);
+            await this.copyObject(editor_config.StageBucket, sourceKey, endpoint.CatalogEndPoints.Bucket, destinationKey);
             
             // If there's a catalog image, copy it to the publish bucket as well
             if (catalog.catalog_image_key) {
-                await this.copyObject(config.StageBucket, catalog.catalog_image_key, config.PublishBucket, catalog.catalog_image_key);
+                await this.copyObject(editor_config.StageBucket, catalog.catalog_image_key,endpoint.CatalogEndPoints.Bucket, catalog.catalog_image_key);
             }
             
             // Send the catalog publish event
@@ -519,7 +520,7 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
                 source: 'site.updates'
             };
             
-            await this.sendCatalogPublishEvent(eventDetail);
+            await this.sendCatalogPublishEvent(eventDetail, endpoint);
         } catch (error) {
             const err = error as Error;
             throw new Error(`Failed to publish catalog: ${err.message}`);
@@ -530,15 +531,15 @@ export class AWSCMSCrudSvc implements ICMSCrudService {
      * Sends a catalog publish event to the Event Bus
      * @param eventDetail The details of the catalog publish event
      */
-    async sendCatalogPublishEvent(eventDetail: CatalogPublishEventDetail): Promise<void> {
+    async sendCatalogPublishEvent(eventDetail: CatalogPublishEventDetail, endpoint: EndPoint): Promise<void> {
         try {
             const params = {
                 Entries: [
                     {
-                        Source: config.CatalogEventSource,
+                        Source: endpoint.CatalogEndPoints.EventSource,
                         DetailType: 'site-updates',
                         Detail: JSON.stringify(eventDetail),
-                        EventBusName: config.ReleaseEventBusName
+                        EventBusName: endpoint.CatalogEndPoints.EventBusName
                     }
                 ]
             };

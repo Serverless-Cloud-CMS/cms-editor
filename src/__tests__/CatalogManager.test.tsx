@@ -78,7 +78,7 @@ const createMockDataService = (): ICMSCrudService => ({
   uploadImageBlob: vi.fn().mockResolvedValue(undefined),
   copyObject: vi.fn().mockResolvedValue(undefined),
   getMetaData: vi.fn().mockResolvedValue({}),
-  sendReleaseEvent: vi.fn().mockResolvedValue(undefined),
+  sendEvent: vi.fn().mockResolvedValue(undefined),
   pollForMetaData: vi.fn().mockResolvedValue({}),
   createCatalog: vi.fn().mockResolvedValue(undefined),
   updateCatalog: vi.fn().mockResolvedValue(undefined),
