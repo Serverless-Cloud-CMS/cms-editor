@@ -4,19 +4,46 @@ This is a web-based Content Management System (CMS) Editor built with React and 
 
 [![BUILD](https://github.com/Serverless-Cloud-CMS/cms-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/Serverless-Cloud-CMS/cms-editor/actions/workflows/ci.yml)
 
+
 ## Features
 - Rich text editing
 - Table and image support
+- Catagory Support
 - User authentication
 - AWS CMS CRUD integration
 - Modern UI with theming
 
+## Image of Editor UI
+![Editor_Screenshot.png](docs/Editor_Screenshot.png)
+
 ## Getting Started
+The Editor requires AWS Cognito to be set up. See the [AWS Cognito documentation](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html) for more information.
+
+You can use the local/editor Terraform and CloudFormation template to deploy a test AWS Cognito setup and S3 buckets for local testing.
+
+To learn more about setting up Cognito and using the Editor, check out the [Serverless CMS Book Part 2](https://github.com/Serverless-Cloud-CMS/serverless-cms-book/blob/main/ServerlessCMS-Part2.pdf) that describes this approach.
+
+```aiignore
+    AuthConfig: {
+        ClientId: import.meta.env.VITE_CLIENTID,
+        IdentityPoolId: import.meta.env.VITE_IDENTITYPOOLID,
+        AppWebDomain: import.meta.env.VITE_APPWEBDOMAIN,
+        TokenScopesArray: ['openid'],
+        RedirectUriSignIn: import.meta.env.VITE_REDIRECTURISIGNIN,
+        RedirectUriSignOut: import.meta.env.VITE_REDIRECTURISIGNOUT,
+        IdentityProvider: '',
+        UserPoolId: import.meta.env.VITE_USERPOOLID,
+        AdvancedSecurityDataCollectionFlag: false
+    },
+```
+
+All values are provided as environment variables and can be set up using the Terraform and CloudFormation templates provided.
 
 ### Prerequisites
 - Node.js (v18 or later recommended)
 - npm or yarn
 - Docker (for containerized builds)
+- AWS User Pool and App client Setup
 
 ### Installation
 1. Clone the repository:
